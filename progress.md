@@ -1,28 +1,44 @@
-## Progress - Session 1
+# Progress
 
-- **Initial Setup:**
-  - Initialized a new npm project.
-  - Installed `three` and `vite` as dependencies.
-  - Created a `.gitignore` file to exclude `node_modules`.
-- **HTML Structure:**
-  - Created a basic `index.html` file to serve as the entry point for the application.
-- **Three.js Scene:**
-  - Created a `main.js` file.
-  - Added a basic Three.js scene, camera, and renderer.
-  - Added ambient and directional lighting to the scene.
-  - Added `THREE.Fog` for atmospheric depth.
-- **Experience Zones:**
-  - **Open Tundra Plains:** Implemented with a large ground plane and natural colors.
-  - **Mountain Passes:** Added distant mountain geometry using cones.
-  - **Braided Rivers:** Added a blue river plane.
-- **Interactions:**
-  - Implemented slow and calm camera movement using WASD/arrow keys.
-  - Added distance-based fog adjustments to simulate zone transitions.
-- **Audio:**
-  - Initialized Three.js audio system logic (awaiting assets).
+## Completed
+- [x] Project Setup
+    - [x] Created `package.json` with dependencies.
+    - [x] Installed dependencies.
+    - [x] configured `vite.config.js`.
+    - [x] Created basic `index.html`, `main.js`, `style.css`.
+    - [x] Verified build.
+- [x] Implement Animation Loop
+    - [x] Created `src/systems/Loop.js`.
+    - [x] Integrated `Loop.js` into `src/main.js`.
+    - [x] Verified build.
+- [x] Implement Input Controller
+    - [x] Created `src/systems/InputController.js`.
+    - [x] Verified build.
+- [x] Implement Camera Rig
+    - [x] Created `src/systems/CameraRig.js` with smooth movement/look.
+    - [x] Integrated into `main.js`.
+    - [x] Verified build.
+- [x] Implement Zone Architecture
+    - [x] Created `src/world/Zone.js` base class.
+    - [x] Created `src/world/ZoneManager.js`.
+    - [x] Verified build.
+- [x] Implement Tundra Zone (Zone 1)
+    - [x] Created `src/world/TundraZone.js`.
+    - [x] Registered and loaded in `main.js`.
+    - [x] Verified build.
+- [x] Implement Mountain Zone (Zone 2)
+    - [x] Created `src/world/MountainZone.js`.
+    - [x] Registered in `main.js`.
+    - [x] Verified build.
+- [x] Implement River Zone (Zone 3)
+    - [x] Created `src/world/RiverZone.js`.
+    - [x] Registered in `main.js`.
+    - [x] Verified build.
+- [x] Audio and Polish
+    - [x] Created `src/systems/AudioManager.js` with procedural wind.
+    - [x] Added minimal UI with fade out.
+    - [x] Verified build.
 
-**Overall Completion: 60%**
-- Core movement and scene setup: 100%
-- Environment Zones (3/5): 60%
-- Atmosphere and Visuals: 50%
-- Audio: 20% (logic only)
+## In Progress
+
+## Backlog

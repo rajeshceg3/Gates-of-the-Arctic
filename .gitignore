@@ -1,3 +1,4 @@
 node_modules/
-vite_output.log
 dist/
+vite_output.log
+.DS_Store

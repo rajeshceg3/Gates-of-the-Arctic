@@ -1,0 +1,27 @@
+{
+  "name": "quiet-north",
+  "version": "1.0.0",
+  "description": "A calm, immersive 3D experience of the Gates of the Arctic National Park.",
+  "main": "main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rajeshceg3/Gates-of-the-Arctic.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/rajeshceg3/Gates-of-the-Arctic/issues"
+  },
+  "homepage": "https://github.com/rajeshceg3/Gates-of-the-Arctic#readme",
+  "dependencies": {
+    "three": "^0.182.0",
+    "vite": "^7.3.1"
+  }
+}

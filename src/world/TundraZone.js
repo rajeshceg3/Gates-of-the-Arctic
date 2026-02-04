@@ -1,5 +1,7 @@
 import { Zone } from './Zone.js';
 import * as THREE from 'three';
+import { noise } from '../utils/Noise.js';
+import { distortGeometry } from '../utils/GeometryUtils.js';
 
 class TundraZone extends Zone {
   async load(scene) {
@@ -20,23 +22,55 @@ class TundraZone extends Zone {
     dirLight.position.set(-50, 20, -50); // Low sun angle
     dirLight.castShadow = true;
     dirLight.shadow.bias = -0.0005;
+    dirLight.shadow.mapSize.width = 2048;
+    dirLight.shadow.mapSize.height = 2048;
     this.add(dirLight);
 
     // Terrain
-    const geometry = new THREE.PlaneGeometry(200, 200, 64, 64);
+    const geometry = new THREE.PlaneGeometry(200, 200, 128, 128); // Higher resolution
+    const count = geometry.attributes.position.count;
 
-    // Simple noise for unevenness
+    // Create color attribute
+    geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
+
     const positions = geometry.attributes.position;
-    for (let i = 0; i < positions.count; i++) {
-       // Just some random noise for now
-       const z = Math.random() * 0.5;
+    const colors = geometry.attributes.color;
+
+    const colorRock = new THREE.Color(0x555555);
+    const colorGrass = new THREE.Color(0x5da130);
+    const colorSnow = new THREE.Color(0xffffff);
+    const tempColor = new THREE.Color();
+
+    for (let i = 0; i < count; i++) {
+       const x = positions.getX(i);
+       const y = positions.getY(i); // Local Y is world Z before rotation
+
+       // Perlin noise for height
+       // Multiple octaves
+       let z = noise(x * 0.05, y * 0.05) * 2;
+       z += noise(x * 0.1, y * 0.1) * 0.5;
+       z += noise(x * 0.5, y * 0.5) * 0.1;
+
        positions.setZ(i, z);
+
+       // Coloring
+       // Mix grass and rock based on noise and height
+       let n = noise(x * 0.1, y * 0.1);
+       if (z > 2.0) {
+           tempColor.copy(colorSnow);
+       } else if (z > 1.5) {
+           tempColor.copy(colorRock).lerp(colorSnow, (z - 1.5) * 2);
+       } else {
+           tempColor.copy(colorGrass).lerp(colorRock, Math.max(0, n));
+       }
+
+       colors.setXYZ(i, tempColor.r, tempColor.g, tempColor.b);
     }
     geometry.computeVertexNormals();
 
     const material = new THREE.MeshStandardMaterial({
-        color: 0x5da130, // Desaturated green
-        roughness: 1.0,
+        vertexColors: true,
+        roughness: 0.9,
         flatShading: true
     });
     const terrain = new THREE.Mesh(geometry, material);
@@ -45,23 +79,35 @@ class TundraZone extends Zone {
     this.add(terrain);
 
     // Scattered elements (Rocks)
-    const rockGeo = new THREE.DodecahedronGeometry(0.8); // Simple geometric shapes
+    // Distort a dodecahedron
+    let rockGeo = new THREE.DodecahedronGeometry(0.8);
+    rockGeo = distortGeometry(rockGeo, 2, 0.3);
+
     const rockMat = new THREE.MeshStandardMaterial({ color: 0x666666, flatShading: true });
-    const rocks = new THREE.InstancedMesh(rockGeo, rockMat, 100);
+    const rocks = new THREE.InstancedMesh(rockGeo, rockMat, 150);
+    rocks.castShadow = true;
+    rocks.receiveShadow = true;
 
     const dummy = new THREE.Object3D();
-    for(let i=0; i<100; i++) {
+    for(let i=0; i<150; i++) {
         const x = (Math.random() - 0.5) * 180;
         const z = (Math.random() - 0.5) * 180;
-        dummy.position.set(x, 0, z); // We need to offset y based on scale?
+
+        // Find height at this position roughly
+        // (We should ideally sample the noise function again)
+        let yHeight = noise(x * 0.05, z * 0.05) * 2;
+        yHeight += noise(x * 0.1, z * 0.1) * 0.5;
+        yHeight += noise(x * 0.5, z * 0.5) * 0.1;
+
+        dummy.position.set(x, yHeight, z);
 
         dummy.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
 
         const scale = 0.5 + Math.random() * 1.5;
         dummy.scale.set(scale, scale, scale);
 
-        // Adjust Y so it sits on ground roughly
-        dummy.position.y = scale * 0.5;
+        // Adjust Y so it sits on ground
+        dummy.position.y += scale * 0.4;
 
         dummy.updateMatrix();
         rocks.setMatrixAt(i, dummy.matrix);

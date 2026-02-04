@@ -1,5 +1,6 @@
 import { Zone } from './Zone.js';
 import * as THREE from 'three';
+import { noise } from '../utils/Noise.js';
 
 class RiverZone extends Zone {
   async load(scene) {
@@ -20,36 +21,77 @@ class RiverZone extends Zone {
     dirLight.position.set(0, 50, -50);
     dirLight.castShadow = true;
     dirLight.shadow.bias = -0.0005;
+    dirLight.shadow.mapSize.width = 2048;
+    dirLight.shadow.mapSize.height = 2048;
     this.add(dirLight);
 
     // Terrain (Valley with river bed)
-    const geometry = new THREE.PlaneGeometry(200, 200, 64, 64);
+    const geometry = new THREE.PlaneGeometry(200, 200, 128, 128);
+    const count = geometry.attributes.position.count;
+    geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
+
     const positions = geometry.attributes.position;
+    const colors = geometry.attributes.color;
+
+    const colorGrass = new THREE.Color(0x3a5f0b);
+    const colorSand = new THREE.Color(0x8b7e66); // Muddy/sandy bank
+    const tempColor = new THREE.Color();
 
     for (let i = 0; i < positions.count; i++) {
         const x = positions.getX(i);
+        const y = positions.getY(i); // World Z
 
-        // River bed in the middle
+        // River path meander
+        // Use noise to offset the center of the river based on Y (Z)
+        const meander = noise(y * 0.02) * 30; // +/- 15 units
+
+        const distFromRiver = Math.abs(x - meander);
+
         let height = 0;
-        const dist = Math.abs(x);
 
-        if (dist < 10) {
-            height = -2; // River bed depth
-        } else if (dist < 20) {
-            // Banks
-            height = -2 + (dist - 10) * 0.4;
+        // River channel profile
+        if (distFromRiver < 8) {
+            // Deep river bed
+            // Smoothly curve down
+            // cos interpolation from -1 to 1 scaled
+            const normalized = distFromRiver / 8; // 0 center, 1 bank
+            height = -3 + Math.pow(normalized, 2) * 3;
+        } else if (distFromRiver < 15) {
+            // Banks rising
+            height = (distFromRiver - 8) * 0.5;
         } else {
             // Plains/Hills
-            height = 2 + Math.random() * 0.5;
+            // Base height + noise
+            height = 3.5 + noise(x * 0.05, y * 0.05) * 1.5;
         }
 
         positions.setZ(i, height);
+
+        // Colors
+        if (height < 0.5) {
+             // Underwater / Shore
+             tempColor.copy(colorSand);
+        } else if (height < 2.0) {
+             // Transition
+             const t = (height - 0.5) / 1.5;
+             tempColor.copy(colorSand).lerp(colorGrass, t);
+        } else {
+             tempColor.copy(colorGrass);
+        }
+
+        // Add some noise variation to color
+        const n = noise(x * 0.2, y * 0.2);
+        tempColor.r += n * 0.05;
+        tempColor.g += n * 0.05;
+        tempColor.b += n * 0.05;
+
+        colors.setXYZ(i, tempColor.r, tempColor.g, tempColor.b);
     }
 
     geometry.computeVertexNormals();
 
     const material = new THREE.MeshStandardMaterial({
-        color: 0x3a5f0b, // Darker vegetation
+        vertexColors: true,
         roughness: 1.0,
         flatShading: true
     });
@@ -59,12 +101,13 @@ class RiverZone extends Zone {
     this.add(terrain);
 
     // Water Plane
-    const waterGeo = new THREE.PlaneGeometry(200, 20, 1, 1); // Narrow strip
+    // Large enough to cover all meanders
+    const waterGeo = new THREE.PlaneGeometry(200, 200, 1, 1);
     const waterMat = new THREE.MeshStandardMaterial({
         color: 0x4682B4,
         roughness: 0.1,
         metalness: 0.8,
-        opacity: 0.8,
+        opacity: 0.7,
         transparent: true
     });
     const water = new THREE.Mesh(waterGeo, waterMat);

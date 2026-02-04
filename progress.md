@@ -49,6 +49,12 @@
     - [x] Added keyboard shortcuts (1-5) for zone switching.
     - [x] Updated Zones to manage environment (fog/background).
     - [x] Verified build and visual transitions.
+- [x] Visual Fidelity Improvements (Ultrathink)
+    - [x] Implemented procedural Perlin noise (`src/utils/Noise.js`) for organic terrain generation.
+    - [x] Implemented geometry distortion (`src/utils/GeometryUtils.js`) for organic trees and rocks.
+    - [x] Refactored all zones to use noise-based heightmaps and vertex coloring.
+    - [x] Enhanced lighting with `PCFSoftShadowMap`.
+    - [x] Improved vegetation and aurora visuals to remove artificial artifacts.
 
 ## In Progress
 

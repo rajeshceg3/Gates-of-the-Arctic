@@ -23,6 +23,7 @@ async function main() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.shadowMap.enabled = true; // Enable shadows
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Softer shadows
   container.appendChild(renderer.domElement);
 
   // Systems

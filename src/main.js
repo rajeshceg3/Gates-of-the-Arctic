@@ -6,6 +6,8 @@ import { ZoneManager } from './world/ZoneManager.js';
 import { TundraZone } from './world/TundraZone.js';
 import { MountainZone } from './world/MountainZone.js';
 import { RiverZone } from './world/RiverZone.js';
+import { ForestZone } from './world/ForestZone.js';
+import { SkyZone } from './world/SkyZone.js';
 import { AudioManager } from './systems/AudioManager.js';
 
 async function main() {
@@ -51,9 +53,22 @@ async function main() {
   zoneManager.register('tundra', TundraZone);
   zoneManager.register('mountain', MountainZone);
   zoneManager.register('river', RiverZone);
+  zoneManager.register('forest', ForestZone);
+  zoneManager.register('sky', SkyZone);
 
   // Initial Zone
   await zoneManager.switchTo('tundra');
+
+  // Dev controls to switch zones
+  window.addEventListener('keydown', (e) => {
+    switch (e.key) {
+      case '1': zoneManager.switchTo('tundra'); break;
+      case '2': zoneManager.switchTo('mountain'); break;
+      case '3': zoneManager.switchTo('river'); break;
+      case '4': zoneManager.switchTo('forest'); break;
+      case '5': zoneManager.switchTo('sky'); break;
+    }
+  });
 
   loop.updatables.push(rig);
   loop.updatables.push(zoneManager);

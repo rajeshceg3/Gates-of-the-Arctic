@@ -2,8 +2,14 @@ import { Zone } from './Zone.js';
 import * as THREE from 'three';
 
 class TundraZone extends Zone {
-  async load() {
+  async load(scene) {
     await super.load();
+
+    // Environment
+    if (scene) {
+        scene.background = new THREE.Color(0xdbe9f4);
+        scene.fog = new THREE.FogExp2(0xdbe9f4, 0.02);
+    }
 
     // Lighting
     const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);

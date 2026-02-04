@@ -22,7 +22,7 @@ class SkyZone extends Zone {
     this.add(moonLight);
 
     // Terrain (Ice sheet, very dark)
-    const geometry = new THREE.PlaneGeometry(300, 300, 32, 32);
+    const geometry = new THREE.PlaneGeometry(300, 300, 64, 64); // Slightly better res
     // Add some subtle noise to ice
     const pos = geometry.attributes.position;
     for(let i=0; i<pos.count; i++){
@@ -36,17 +36,17 @@ class SkyZone extends Zone {
         color: 0x05101a,
         roughness: 0.2,
         metalness: 0.8,
-        flatShading: true
+        flatShading: false
     });
     const terrain = new THREE.Mesh(geometry, material);
     terrain.rotation.x = -Math.PI / 2;
+    terrain.name = 'terrain'; // Name for raycasting
     this.add(terrain);
 
     // Stars
     const starsGeo = new THREE.BufferGeometry();
     const starCount = 3000;
     const starPos = new Float32Array(starCount * 3);
-    const starSizes = new Float32Array(starCount);
 
     for(let i=0; i<starCount; i++) {
         const x = (Math.random() - 0.5) * 400;
@@ -56,13 +56,9 @@ class SkyZone extends Zone {
         starPos[i*3] = x;
         starPos[i*3+1] = y;
         starPos[i*3+2] = z;
-
-        starSizes[i] = Math.random() * 0.5 + 0.1;
     }
     starsGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-    // size attenuation is tricky in PointsMaterial without custom shader, but size is uniform unless we use shader.
-    // We'll stick to uniform size for now or use multiple point clouds if we really wanted variety.
-    // Actually, size in PointsMaterial is constant.
+
     const starsMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.4, transparent: true, opacity: 0.8, sizeAttenuation: true });
     const stars = new THREE.Points(starsGeo, starsMat);
     this.add(stars);

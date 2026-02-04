@@ -2,6 +2,7 @@ import { Zone } from './Zone.js';
 import * as THREE from 'three';
 import { noise } from '../utils/Noise.js';
 import { distortGeometry } from '../utils/GeometryUtils.js';
+import { PoissonDiskSampling } from '../utils/PoissonDiskSampling.js';
 
 class TundraZone extends Zone {
   async load(scene) {
@@ -27,7 +28,7 @@ class TundraZone extends Zone {
     this.add(dirLight);
 
     // Terrain
-    const geometry = new THREE.PlaneGeometry(200, 200, 128, 128); // Higher resolution
+    const geometry = new THREE.PlaneGeometry(200, 200, 256, 256); // Higher resolution
     const count = geometry.attributes.position.count;
 
     // Create color attribute
@@ -71,11 +72,12 @@ class TundraZone extends Zone {
     const material = new THREE.MeshStandardMaterial({
         vertexColors: true,
         roughness: 0.9,
-        flatShading: true
+        flatShading: false // Smooth shading
     });
     const terrain = new THREE.Mesh(geometry, material);
     terrain.rotation.x = -Math.PI / 2;
     terrain.receiveShadow = true;
+    terrain.name = 'terrain';
     this.add(terrain);
 
     // Scattered elements (Rocks)
@@ -83,35 +85,38 @@ class TundraZone extends Zone {
     let rockGeo = new THREE.DodecahedronGeometry(0.8);
     rockGeo = distortGeometry(rockGeo, 2, 0.3);
 
-    const rockMat = new THREE.MeshStandardMaterial({ color: 0x666666, flatShading: true });
-    const rocks = new THREE.InstancedMesh(rockGeo, rockMat, 150);
+    const rockMat = new THREE.MeshStandardMaterial({ color: 0x666666, flatShading: false, roughness: 0.8 });
+
+    // Poisson Sampling
+    const pds = new PoissonDiskSampling(180, 180, 5, 30);
+    const points = pds.fill();
+
+    const rocks = new THREE.InstancedMesh(rockGeo, rockMat, points.length);
     rocks.castShadow = true;
     rocks.receiveShadow = true;
 
     const dummy = new THREE.Object3D();
-    for(let i=0; i<150; i++) {
-        const x = (Math.random() - 0.5) * 180;
-        const z = (Math.random() - 0.5) * 180;
 
-        // Find height at this position roughly
-        // (We should ideally sample the noise function again)
+    points.forEach((p, i) => {
+        const x = p.x - 90;
+        const z = p.y - 90;
+
         let yHeight = noise(x * 0.05, z * 0.05) * 2;
         yHeight += noise(x * 0.1, z * 0.1) * 0.5;
         yHeight += noise(x * 0.5, z * 0.5) * 0.1;
 
         dummy.position.set(x, yHeight, z);
-
         dummy.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
 
         const scale = 0.5 + Math.random() * 1.5;
         dummy.scale.set(scale, scale, scale);
 
-        // Adjust Y so it sits on ground
         dummy.position.y += scale * 0.4;
 
         dummy.updateMatrix();
         rocks.setMatrixAt(i, dummy.matrix);
-    }
+    });
+
     this.add(rocks);
   }
 }

@@ -55,6 +55,10 @@
     - [x] Refactored all zones to use noise-based heightmaps and vertex coloring.
     - [x] Enhanced lighting with `PCFSoftShadowMap`.
     - [x] Improved vegetation and aurora visuals to remove artificial artifacts.
+    - [x] Implemented Poisson Disk Sampling for natural object distribution.
+    - [x] Implemented ground clamping for camera movement (physics-based walking).
+    - [x] Switched to high-res, smooth-shaded terrain for realism.
+    - [x] Improved water material and lighting.
 
 ## In Progress
 

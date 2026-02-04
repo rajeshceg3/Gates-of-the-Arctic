@@ -2,6 +2,7 @@ import { Zone } from './Zone.js';
 import * as THREE from 'three';
 import { noise } from '../utils/Noise.js';
 import { distortGeometry } from '../utils/GeometryUtils.js';
+import { PoissonDiskSampling } from '../utils/PoissonDiskSampling.js';
 
 class ForestZone extends Zone {
   async load(scene) {
@@ -27,7 +28,7 @@ class ForestZone extends Zone {
     this.add(dirLight);
 
     // Terrain
-    const geometry = new THREE.PlaneGeometry(200, 200, 128, 128);
+    const geometry = new THREE.PlaneGeometry(200, 200, 256, 256);
 
     // Vertex Colors
     const count = geometry.attributes.position.count;
@@ -61,25 +62,30 @@ class ForestZone extends Zone {
     const material = new THREE.MeshStandardMaterial({
         vertexColors: true,
         roughness: 0.9,
-        flatShading: true
+        flatShading: false // Smooth shading
     });
     const terrain = new THREE.Mesh(geometry, material);
     terrain.rotation.x = -Math.PI / 2;
     terrain.receiveShadow = true;
+    terrain.name = 'terrain';
     this.add(terrain);
 
     // Trees (Instanced)
     // Trunk - distort it slightly
     let trunkGeo = new THREE.CylinderGeometry(0.2, 0.4, 2, 7);
     trunkGeo = distortGeometry(trunkGeo, 3, 0.1);
-    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x3d2817 });
+    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x3d2817, flatShading: false });
 
     // Leaves (Cone) - distort significantly
     let leavesGeo = new THREE.ConeGeometry(1.5, 4, 7);
     leavesGeo = distortGeometry(leavesGeo, 2, 0.5);
-    const leavesMat = new THREE.MeshStandardMaterial({ color: 0xffffff }); // Use white to modulate with instance color
+    const leavesMat = new THREE.MeshStandardMaterial({ color: 0xffffff, flatShading: false });
 
-    const treeCount = 400;
+    // Poisson Sampling
+    const pds = new PoissonDiskSampling(180, 180, 4, 30);
+    const points = pds.fill();
+
+    const treeCount = points.length;
     const trunks = new THREE.InstancedMesh(trunkGeo, trunkMat, treeCount);
     const leaves = new THREE.InstancedMesh(leavesGeo, leavesMat, treeCount);
 
@@ -90,20 +96,15 @@ class ForestZone extends Zone {
     const colorBase = new THREE.Color(0x2d4c1e);
     const colorAutumn = new THREE.Color(0x556622); // Slightly yellowish
 
-    for (let i = 0; i < treeCount; i++) {
-        // Random position using Poisson Disk-ish (simple random for now but rejection sampling could be better)
-        // Or just noise based probability
+    const dummy = new THREE.Object3D();
 
-        const angle = Math.random() * Math.PI * 2;
-        const radius = 5 + Math.random() * 90;
-        const x = Math.cos(angle) * radius;
-        const z = Math.sin(angle) * radius;
+    points.forEach((p, i) => {
+        const x = p.x - 90;
+        const z = p.y - 90;
 
         // Height at this position
         let y = noise(x * 0.03, z * 0.03) * 3;
         y += noise(x * 0.1, z * 0.1) * 0.5;
-
-        const dummy = new THREE.Object3D();
 
         // Trunk
         dummy.position.set(x, y + 1, z);
@@ -118,7 +119,17 @@ class ForestZone extends Zone {
         trunks.setMatrixAt(i, dummy.matrix);
 
         // Leaves
-        dummy.position.set(x, y + 1 + 2 * scale, z);
+        // Follow trunk rotation/position
+        const trunkPos = dummy.position.clone();
+        const trunkRot = dummy.rotation.clone();
+
+        // Offset relative to trunk
+        dummy.position.set(0, 2 * scale, 0);
+        dummy.position.applyEuler(trunkRot);
+        dummy.position.add(trunkPos);
+
+        // dummy.rotation is already set to trunk rotation (which is fine)
+
         dummy.updateMatrix();
         leaves.setMatrixAt(i, dummy.matrix);
 
@@ -128,7 +139,7 @@ class ForestZone extends Zone {
         tempColor.multiplyScalar(0.8 + Math.random() * 0.4);
 
         leaves.setColorAt(i, tempColor);
-    }
+    });
 
     this.add(trunks);
     this.add(leaves);

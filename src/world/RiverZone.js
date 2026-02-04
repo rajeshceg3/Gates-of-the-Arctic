@@ -26,7 +26,7 @@ class RiverZone extends Zone {
     this.add(dirLight);
 
     // Terrain (Valley with river bed)
-    const geometry = new THREE.PlaneGeometry(200, 200, 128, 128);
+    const geometry = new THREE.PlaneGeometry(200, 200, 256, 256);
     const count = geometry.attributes.position.count;
     geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
 
@@ -93,22 +93,27 @@ class RiverZone extends Zone {
     const material = new THREE.MeshStandardMaterial({
         vertexColors: true,
         roughness: 1.0,
-        flatShading: true
+        flatShading: false
     });
     const terrain = new THREE.Mesh(geometry, material);
     terrain.rotation.x = -Math.PI / 2;
     terrain.receiveShadow = true;
+    terrain.name = 'terrain';
     this.add(terrain);
 
     // Water Plane
     // Large enough to cover all meanders
-    const waterGeo = new THREE.PlaneGeometry(200, 200, 1, 1);
-    const waterMat = new THREE.MeshStandardMaterial({
+    const waterGeo = new THREE.PlaneGeometry(200, 200, 32, 32);
+    const waterMat = new THREE.MeshPhysicalMaterial({
         color: 0x4682B4,
         roughness: 0.1,
-        metalness: 0.8,
-        opacity: 0.7,
-        transparent: true
+        metalness: 0.1,
+        transmission: 0.5, // Glass-like transmission
+        thickness: 1.0,
+        opacity: 0.8,
+        transparent: true,
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.1
     });
     const water = new THREE.Mesh(waterGeo, waterMat);
     water.rotation.x = -Math.PI / 2;

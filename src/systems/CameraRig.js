@@ -1,9 +1,13 @@
-import { Vector3 } from 'three';
+import { Vector3, Raycaster } from 'three';
 
 class CameraRig {
-  constructor(camera, input) {
+  constructor(camera, input, scene) {
     this.camera = camera;
     this.input = input;
+    this.scene = scene;
+
+    this.raycaster = new Raycaster();
+    this.raycaster.ray.direction.set(0, -1, 0);
 
     // Physics/Movement params
     this.velocity = new Vector3();
@@ -12,6 +16,8 @@ class CameraRig {
 
     this.pitch = 0;
     this.yaw = 0;
+
+    this.currentHeight = 1.7;
 
     // Initial position
     this.camera.position.set(0, 1.7, 0); // 1.7m eye height
@@ -65,12 +71,38 @@ class CameraRig {
     this.velocity.lerp(targetVelocity, this.smoothing * delta);
 
     // Apply position
-    this.camera.position.addScaledVector(this.velocity, delta);
+    this.camera.position.x += this.velocity.x * delta;
+    this.camera.position.z += this.velocity.z * delta;
 
-    // Constraint: Grounded
-    // TODO: Raycast to terrain
-    // For now, simple floor at y=0, eye height 1.7
-    this.camera.position.y = 1.7;
+    // 3. Ground Clamping
+    if (this.scene) {
+        const rayOrigin = new Vector3(this.camera.position.x, 1000, this.camera.position.z);
+        this.raycaster.ray.origin.copy(rayOrigin);
+
+        // Intersect with terrain
+        // We look for objects named 'terrain'
+        const intersects = this.raycaster.intersectObjects(this.scene.children, true);
+
+        let groundHeight = 0;
+        let found = false;
+
+        for (let i = 0; i < intersects.length; i++) {
+            if (intersects[i].object.name === 'terrain') {
+                groundHeight = intersects[i].point.y;
+                found = true;
+                break;
+            }
+        }
+
+        if (found) {
+             const targetHeight = groundHeight + 1.7;
+             // Smoothly adjust height
+             const heightSmoothing = 5.0;
+             this.currentHeight += (targetHeight - this.currentHeight) * heightSmoothing * delta;
+        }
+
+        this.camera.position.y = this.currentHeight;
+    }
   }
 }
 

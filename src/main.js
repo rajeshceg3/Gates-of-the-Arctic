@@ -29,7 +29,7 @@ async function main() {
   // Systems
   const loop = new Loop(camera, scene, renderer);
   const input = new InputController();
-  const rig = new CameraRig(camera, input);
+  const rig = new CameraRig(camera, input, scene);
   const zoneManager = new ZoneManager(scene);
   const audio = new AudioManager();
 

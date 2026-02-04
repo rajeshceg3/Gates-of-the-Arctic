@@ -26,7 +26,7 @@ class MountainZone extends Zone {
     this.add(dirLight);
 
     // Terrain
-    const geometry = new THREE.PlaneGeometry(300, 300, 128, 128);
+    const geometry = new THREE.PlaneGeometry(300, 300, 256, 256);
     const count = geometry.attributes.position.count;
 
     geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
@@ -86,11 +86,12 @@ class MountainZone extends Zone {
     const material = new THREE.MeshStandardMaterial({
         vertexColors: true,
         roughness: 0.9,
-        flatShading: true
+        flatShading: false
     });
     const terrain = new THREE.Mesh(geometry, material);
     terrain.rotation.x = -Math.PI / 2;
     terrain.receiveShadow = true;
+    terrain.name = 'terrain';
     this.add(terrain);
   }
 }

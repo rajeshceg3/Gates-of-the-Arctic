@@ -24,6 +24,7 @@ canvas {
   justify-content: center;
   align-items: flex-end;
   padding-bottom: 50px;
+  z-index: 10;
 }
 
 #instructions {
@@ -37,4 +38,21 @@ canvas {
 /* Helper class to fade out */
 .fade-out {
   opacity: 0 !important;
+}
+
+#transition-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: black;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1s ease-in-out;
+  z-index: 20;
+}
+
+.active-transition {
+  opacity: 1 !important;
 }

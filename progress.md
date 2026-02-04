@@ -38,6 +38,17 @@
     - [x] Created `src/systems/AudioManager.js` with procedural wind.
     - [x] Added minimal UI with fade out.
     - [x] Verified build.
+- [x] Implement Forest Zone (Zone 4)
+    - [x] Created `src/world/ForestZone.js` with instanced trees.
+    - [x] Verified build.
+- [x] Implement Sky Zone (Zone 5)
+    - [x] Created `src/world/SkyZone.js` with stars and aurora.
+    - [x] Verified build.
+- [x] Implement Zone Transitions
+    - [x] Added fade transition in `ZoneManager.js` and `style.css`.
+    - [x] Added keyboard shortcuts (1-5) for zone switching.
+    - [x] Updated Zones to manage environment (fog/background).
+    - [x] Verified build and visual transitions.
 
 ## In Progress
 

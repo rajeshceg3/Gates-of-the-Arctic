@@ -1,5 +1,7 @@
 import { Zone } from './Zone.js';
 import * as THREE from 'three';
+import { noise } from '../utils/Noise.js';
+import { distortGeometry } from '../utils/GeometryUtils.js';
 
 class ForestZone extends Zone {
   async load(scene) {
@@ -8,7 +10,7 @@ class ForestZone extends Zone {
     // Environment
     if (scene) {
         scene.background = new THREE.Color(0x223344); // Dark blue/grey
-        scene.fog = new THREE.FogExp2(0x223344, 0.03); // More fog
+        scene.fog = new THREE.FogExp2(0x223344, 0.025);
     }
 
     // Lighting (Darker, moody)
@@ -20,22 +22,44 @@ class ForestZone extends Zone {
     dirLight.position.set(-50, 30, -50);
     dirLight.castShadow = true;
     dirLight.shadow.bias = -0.0005;
+    dirLight.shadow.mapSize.width = 2048;
+    dirLight.shadow.mapSize.height = 2048;
     this.add(dirLight);
 
     // Terrain
-    const geometry = new THREE.PlaneGeometry(200, 200, 64, 64);
+    const geometry = new THREE.PlaneGeometry(200, 200, 128, 128);
+
+    // Vertex Colors
+    const count = geometry.attributes.position.count;
+    geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
+
     const positions = geometry.attributes.position;
+    const colors = geometry.attributes.color;
+
+    const colorDarkGreen = new THREE.Color(0x1e3f20);
+    const colorBrown = new THREE.Color(0x3d2817);
+    const tempColor = new THREE.Color();
+
     for (let i = 0; i < positions.count; i++) {
         const x = positions.getX(i);
-        const z = positions.getY(i); // Y in local is Z in world due to rotation
-        // Rolling hills
-        const height = Math.sin(x * 0.05) * 2 + Math.cos(z * 0.05) * 2;
+        const y = positions.getY(i); // Y in local is Z in world
+
+        // Rolling hills with noise
+        let height = noise(x * 0.03, y * 0.03) * 3;
+        height += noise(x * 0.1, y * 0.1) * 0.5;
+
         positions.setZ(i, height);
+
+        // Colors
+        let n = noise(x * 0.1, y * 0.1);
+        tempColor.copy(colorDarkGreen).lerp(colorBrown, Math.max(0, n * 0.5));
+
+        colors.setXYZ(i, tempColor.r, tempColor.g, tempColor.b);
     }
     geometry.computeVertexNormals();
 
     const material = new THREE.MeshStandardMaterial({
-        color: 0x1e3f20, // Dark Forest Green
+        vertexColors: true,
         roughness: 0.9,
         flatShading: true
     });
@@ -45,49 +69,65 @@ class ForestZone extends Zone {
     this.add(terrain);
 
     // Trees (Instanced)
-    // Trunk
-    const trunkGeo = new THREE.CylinderGeometry(0.2, 0.4, 2, 6);
+    // Trunk - distort it slightly
+    let trunkGeo = new THREE.CylinderGeometry(0.2, 0.4, 2, 7);
+    trunkGeo = distortGeometry(trunkGeo, 3, 0.1);
     const trunkMat = new THREE.MeshStandardMaterial({ color: 0x3d2817 });
 
-    // Leaves (Cone)
-    const leavesGeo = new THREE.ConeGeometry(1.5, 4, 6);
-    const leavesMat = new THREE.MeshStandardMaterial({ color: 0x2d4c1e });
+    // Leaves (Cone) - distort significantly
+    let leavesGeo = new THREE.ConeGeometry(1.5, 4, 7);
+    leavesGeo = distortGeometry(leavesGeo, 2, 0.5);
+    const leavesMat = new THREE.MeshStandardMaterial({ color: 0xffffff }); // Use white to modulate with instance color
 
-    // Merged geometry for simpler instancing or just two instanced meshes?
-    // Two instanced meshes is easier to manage colors.
-
-    const count = 300;
-    const trunks = new THREE.InstancedMesh(trunkGeo, trunkMat, count);
-    const leaves = new THREE.InstancedMesh(leavesGeo, leavesMat, count);
+    const treeCount = 400;
+    const trunks = new THREE.InstancedMesh(trunkGeo, trunkMat, treeCount);
+    const leaves = new THREE.InstancedMesh(leavesGeo, leavesMat, treeCount);
 
     trunks.castShadow = true;
     leaves.castShadow = true;
 
-    const dummy = new THREE.Object3D();
-    const _position = new THREE.Vector3();
+    // Instance Colors for leaves
+    const colorBase = new THREE.Color(0x2d4c1e);
+    const colorAutumn = new THREE.Color(0x556622); // Slightly yellowish
 
-    for (let i = 0; i < count; i++) {
-        // Random position, avoid center slightly
+    for (let i = 0; i < treeCount; i++) {
+        // Random position using Poisson Disk-ish (simple random for now but rejection sampling could be better)
+        // Or just noise based probability
+
         const angle = Math.random() * Math.PI * 2;
         const radius = 5 + Math.random() * 90;
         const x = Math.cos(angle) * radius;
         const z = Math.sin(angle) * radius;
 
         // Height at this position
-        const y = Math.sin(x * 0.05) * 2 + Math.cos(z * 0.05) * 2;
+        let y = noise(x * 0.03, z * 0.03) * 3;
+        y += noise(x * 0.1, z * 0.1) * 0.5;
+
+        const dummy = new THREE.Object3D();
 
         // Trunk
-        dummy.position.set(x, y + 1, z); // Center of trunk (height 2) is at y=1 relative to ground
+        dummy.position.set(x, y + 1, z);
         dummy.rotation.set(0, Math.random() * Math.PI, 0);
-        const scale = 0.8 + Math.random() * 0.5;
+        // Tilt slightly
+        dummy.rotation.x = (Math.random() - 0.5) * 0.2;
+        dummy.rotation.z = (Math.random() - 0.5) * 0.2;
+
+        const scale = 0.8 + Math.random() * 0.6;
         dummy.scale.set(scale, scale, scale);
         dummy.updateMatrix();
         trunks.setMatrixAt(i, dummy.matrix);
 
         // Leaves
-        dummy.position.set(x, y + 1 + 2 * scale, z); // Sit on top of trunk
+        dummy.position.set(x, y + 1 + 2 * scale, z);
         dummy.updateMatrix();
         leaves.setMatrixAt(i, dummy.matrix);
+
+        // Color variation
+        tempColor.copy(colorBase).lerp(colorAutumn, Math.random() * 0.5);
+        // Vary brightness
+        tempColor.multiplyScalar(0.8 + Math.random() * 0.4);
+
+        leaves.setColorAt(i, tempColor);
     }
 
     this.add(trunks);

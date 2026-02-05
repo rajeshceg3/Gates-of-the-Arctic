@@ -59,6 +59,9 @@
     - [x] Implemented ground clamping for camera movement (physics-based walking).
     - [x] Switched to high-res, smooth-shaded terrain for realism.
     - [x] Improved water material and lighting.
+- [x] Mobile Controls Refinement
+    - [x] Refactored `InputController.js` for better touch navigation (drag to look, hold to move).
+    - [x] Updated instructions in `index.html`.
 
 ## In Progress
 

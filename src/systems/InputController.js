@@ -32,6 +32,7 @@ class InputController {
     document.addEventListener('touchend', (e) => this._onTouchEnd(e));
 
     this.touchStart = { x: 0, y: 0 };
+    this.touchStartOrigin = { x: 0, y: 0 };
   }
 
   _onKeyDown(event) {
@@ -81,6 +82,8 @@ class InputController {
     if (event.touches.length === 1) {
       this.touchStart.x = event.touches[0].clientX;
       this.touchStart.y = event.touches[0].clientY;
+      this.touchStartOrigin.x = event.touches[0].clientX;
+      this.touchStartOrigin.y = event.touches[0].clientY;
     }
   }
 
@@ -91,17 +94,18 @@ class InputController {
     if (event.touches.length === 1) {
       const touch = event.touches[0];
       const deltaX = touch.clientX - this.touchStart.x;
-      const deltaY = touch.clientY - this.touchStart.y;
+      // Use accumulative delta for movement
+      const totalDeltaY = touch.clientY - this.touchStartOrigin.y;
 
-      // Update look based on drag
+      // Update look based on drag (incremental)
       this.look.x -= deltaX * this.lookSensitivity * 2;
 
-      // Simple forward drift based on vertical drag
+      // Simple forward drift based on vertical drag distance from origin
       // If dragging up (negative deltaY), move forward
       const threshold = 50;
-      if (deltaY < -threshold) {
+      if (totalDeltaY < -threshold) {
         this.move.z = 1;
-      } else if (deltaY > threshold) {
+      } else if (totalDeltaY > threshold) {
         this.move.z = -1;
       } else {
         this.move.z = 0;

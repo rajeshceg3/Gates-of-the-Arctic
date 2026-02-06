@@ -28,7 +28,7 @@ class TundraZone extends Zone {
     this.add(dirLight);
 
     // Terrain
-    const geometry = new THREE.PlaneGeometry(200, 200, 256, 256); // Higher resolution
+    const geometry = new THREE.PlaneGeometry(200, 200, 128, 128); // Standard resolution
     const count = geometry.attributes.position.count;
 
     // Create color attribute
@@ -72,7 +72,8 @@ class TundraZone extends Zone {
     const material = new THREE.MeshStandardMaterial({
         vertexColors: true,
         roughness: 0.9,
-        flatShading: false // Smooth shading
+        flatShading: false, // Smooth shading
+        side: THREE.DoubleSide
     });
     const terrain = new THREE.Mesh(geometry, material);
     terrain.rotation.x = -Math.PI / 2;

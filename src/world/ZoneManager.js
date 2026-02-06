@@ -3,6 +3,7 @@ class ZoneManager {
     this.scene = scene;
     this.currentZone = null;
     this.zones = {};
+    this.labelTimeout = null;
   }
 
   register(name, zoneClass) {
@@ -41,6 +42,20 @@ class ZoneManager {
         setTimeout(() => {
             overlay.classList.remove('active-transition');
         }, 100);
+    }
+
+    // Update Zone Label
+    const label = document.getElementById('zone-label');
+    if (label) {
+        if (this.labelTimeout) clearTimeout(this.labelTimeout);
+
+        label.textContent = name.toUpperCase() + ' ZONE';
+        label.classList.add('visible');
+
+        // Remove label after a delay
+        this.labelTimeout = setTimeout(() => {
+            label.classList.remove('visible');
+        }, 4000);
     }
   }
 

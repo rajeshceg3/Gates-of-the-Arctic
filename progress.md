@@ -59,6 +59,8 @@
     - [x] Implemented ground clamping for camera movement (physics-based walking).
     - [x] Switched to high-res, smooth-shaded terrain for realism.
     - [x] Improved water material and lighting.
+- [x] Final Polish
+    - [x] Implemented Zone Labels with fade in/out animations.
 
 ## In Progress
 

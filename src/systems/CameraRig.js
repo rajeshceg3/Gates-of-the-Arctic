@@ -96,9 +96,13 @@ class CameraRig {
 
         if (found) {
              const targetHeight = groundHeight + 1.7;
+             // console.log(`Ground found at ${groundHeight.toFixed(2)}, moving to ${targetHeight.toFixed(2)}, current ${this.currentHeight.toFixed(2)}`);
              // Smoothly adjust height
              const heightSmoothing = 5.0;
              this.currentHeight += (targetHeight - this.currentHeight) * heightSmoothing * delta;
+        } else {
+             // Fallback if no ground found (e.g. flying or loading)
+             console.log(`No ground found. Camera at ${this.camera.position.y.toFixed(2)}`);
         }
 
         this.camera.position.y = this.currentHeight;

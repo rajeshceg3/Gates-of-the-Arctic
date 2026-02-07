@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { noise } from '../utils/Noise.js';
 import { distortGeometry } from '../utils/GeometryUtils.js';
 import { PoissonDiskSampling } from '../utils/PoissonDiskSampling.js';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 class ForestZone extends Zone {
   async load(scene) {
@@ -10,16 +11,58 @@ class ForestZone extends Zone {
 
     // Environment
     if (scene) {
-        scene.background = new THREE.Color(0x223344); // Dark blue/grey
-        scene.fog = new THREE.FogExp2(0x223344, 0.025);
+        scene.background = new THREE.Color(0x223344);
+        // Fog color matches horizon for seamless blend
+        scene.fog = new THREE.FogExp2(0x445566, 0.015);
     }
 
+    // Sky
+    const skyGeo = new THREE.SphereGeometry(400, 32, 32);
+    const skyMat = new THREE.MeshBasicMaterial({
+        vertexColors: true,
+        side: THREE.BackSide,
+        fog: false
+    });
+
+    const count = skyGeo.attributes.position.count;
+    const colors = new Float32Array(count * 3);
+    const pos = skyGeo.attributes.position;
+
+    const topColor = new THREE.Color(0x0a1a2a); // Deep night blue
+    const horizonColor = new THREE.Color(0x445566); // Fog color
+    const bottomColor = new THREE.Color(0x1a1a1a); // Ground darkness
+    const tempColor = new THREE.Color();
+
+    for(let i=0; i<count; i++) {
+        const y = pos.getY(i);
+        // y ranges from -400 to 400.
+        const t = (y + 400) / 800;
+
+        if (t > 0.5) {
+            // Horizon (0.5) to Zenith (1.0)
+            const factor = (t - 0.5) * 2;
+            tempColor.copy(horizonColor).lerp(topColor, Math.pow(factor, 0.5));
+        } else {
+            // Bottom (0.0) to Horizon (0.5)
+            const factor = t * 2;
+            tempColor.copy(bottomColor).lerp(horizonColor, factor);
+        }
+
+        colors[i*3] = tempColor.r;
+        colors[i*3+1] = tempColor.g;
+        colors[i*3+2] = tempColor.b;
+    }
+
+    skyGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    const sky = new THREE.Mesh(skyGeo, skyMat);
+    this.add(sky);
+
     // Lighting (Darker, moody)
-    const hemiLight = new THREE.HemisphereLight(0x445566, 0x112211, 0.4);
+    const hemiLight = new THREE.HemisphereLight(0x445566, 0x112211, 0.3);
     hemiLight.position.set(0, 50, 0);
     this.add(hemiLight);
 
-    const dirLight = new THREE.DirectionalLight(0xffaa88, 0.6); // Sunset/Sunrise feel
+    const dirLight = new THREE.DirectionalLight(0xffaa88, 1.0); // Brighter sunset/sunrise feel
     dirLight.position.set(-50, 30, -50);
     dirLight.castShadow = true;
     dirLight.shadow.bias = -0.0005;
@@ -31,16 +74,16 @@ class ForestZone extends Zone {
     const geometry = new THREE.PlaneGeometry(200, 200, 256, 256);
 
     // Vertex Colors
-    const count = geometry.attributes.position.count;
-    geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
+    const vCount = geometry.attributes.position.count;
+    geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(vCount * 3), 3));
 
     const positions = geometry.attributes.position;
-    const colors = geometry.attributes.color;
+    const vColors = geometry.attributes.color;
 
     const colorDarkGreen = new THREE.Color(0x1e3f20);
     const colorBrown = new THREE.Color(0x3d2817);
-    const tempColor = new THREE.Color();
 
+    // Improved terrain loop
     for (let i = 0; i < positions.count; i++) {
         const x = positions.getX(i);
         const y = positions.getY(i); // Y in local is Z in world
@@ -59,14 +102,15 @@ class ForestZone extends Zone {
         let mixFactor = Math.max(0, n * 0.5 + detail);
         tempColor.copy(colorDarkGreen).lerp(colorBrown, mixFactor);
 
-        colors.setXYZ(i, tempColor.r, tempColor.g, tempColor.b);
+        vColors.setXYZ(i, tempColor.r, tempColor.g, tempColor.b);
     }
     geometry.computeVertexNormals();
 
     const material = new THREE.MeshStandardMaterial({
         vertexColors: true,
         roughness: 0.9,
-        flatShading: false // Smooth shading
+        flatShading: false, // Smooth shading
+        side: THREE.DoubleSide
     });
     const terrain = new THREE.Mesh(geometry, material);
     terrain.rotation.x = -Math.PI / 2;
@@ -74,40 +118,77 @@ class ForestZone extends Zone {
     terrain.name = 'terrain';
     this.add(terrain);
 
-    // Trees (Instanced)
-    // Trunk
-    let trunkGeo = new THREE.CylinderGeometry(0.2, 0.4, 2, 7);
-    trunkGeo = distortGeometry(trunkGeo, 3, 0.1);
-    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x3d2817, flatShading: false });
+    // Create Tree Prototypes
+    const treeTypes = [];
+    const numTypes = 3;
 
-    // Leaves Layers (3 layers for pine tree look)
-    let leavesBotGeo = new THREE.ConeGeometry(2.0, 2.5, 7);
-    leavesBotGeo = distortGeometry(leavesBotGeo, 2, 0.4);
+    for (let t = 0; t < numTypes; t++) {
+        treeTypes.push(this.createTreeGeometry(t));
+    }
 
-    let leavesMidGeo = new THREE.ConeGeometry(1.5, 2.5, 7);
-    leavesMidGeo = distortGeometry(leavesMidGeo, 2, 0.4);
-
-    let leavesTopGeo = new THREE.ConeGeometry(1.0, 2.0, 7);
-    leavesTopGeo = distortGeometry(leavesTopGeo, 2, 0.4);
-
-    const leavesMat = new THREE.MeshStandardMaterial({ color: 0xffffff, flatShading: false });
+    const woodMat = new THREE.MeshStandardMaterial({ color: 0x3d2817, flatShading: false, roughness: 0.9 });
+    const leafMat = new THREE.MeshStandardMaterial({
+        vertexColors: true,
+        flatShading: false,
+        roughness: 0.8,
+        side: THREE.DoubleSide
+    });
 
     // Poisson Sampling for trees
-    const pds = new PoissonDiskSampling(180, 180, 5, 30); // Increased spacing slightly
+    const pds = new PoissonDiskSampling(180, 180, 6, 30); // Spacing 6
     const points = pds.fill();
-    const treeCount = points.length;
 
-    const trunks = new THREE.InstancedMesh(trunkGeo, trunkMat, treeCount);
-    const leavesBot = new THREE.InstancedMesh(leavesBotGeo, leavesMat, treeCount);
-    const leavesMid = new THREE.InstancedMesh(leavesMidGeo, leavesMat, treeCount);
-    const leavesTop = new THREE.InstancedMesh(leavesTopGeo, leavesMat, treeCount);
+    // Group points by type
+    const pointsByType = Array(numTypes).fill().map(() => []);
+    points.forEach(p => {
+        const typeIdx = Math.floor(Math.random() * numTypes);
+        pointsByType[typeIdx].push(p);
+    });
 
-    trunks.castShadow = true;
-    leavesBot.castShadow = true;
-    leavesMid.castShadow = true;
-    leavesTop.castShadow = true;
+    const dummy = new THREE.Object3D();
 
-    // Small rocks/debris
+    // Create InstancedMeshes
+    for (let t = 0; t < numTypes; t++) {
+        const typePoints = pointsByType[t];
+        const { wood, leaves } = treeTypes[t];
+
+        if (typePoints.length === 0) continue;
+
+        const woodMesh = new THREE.InstancedMesh(wood, woodMat, typePoints.length);
+        const leafMesh = new THREE.InstancedMesh(leaves, leafMat, typePoints.length);
+
+        woodMesh.castShadow = true;
+        woodMesh.receiveShadow = true;
+        leafMesh.castShadow = true;
+        leafMesh.receiveShadow = true;
+
+        typePoints.forEach((p, i) => {
+             const x = p.x - 90;
+             const z = p.y - 90;
+
+             // Get height
+             let y = noise(x * 0.03, z * 0.03) * 3;
+             y += noise(x * 0.1, z * 0.1) * 0.5;
+
+             dummy.position.set(x, y, z); // Tree base at ground
+
+             // Random rotation
+             dummy.rotation.set(0, Math.random() * Math.PI * 2, 0);
+             // Slight random scale
+             const s = 0.8 + Math.random() * 0.4;
+             dummy.scale.set(s, s, s);
+
+             dummy.updateMatrix();
+
+             woodMesh.setMatrixAt(i, dummy.matrix);
+             leafMesh.setMatrixAt(i, dummy.matrix);
+        });
+
+        this.add(woodMesh);
+        this.add(leafMesh);
+    }
+
+    // Small rocks/debris (Recycled logic)
     const pdsRocks = new PoissonDiskSampling(180, 180, 2, 10);
     const rockPoints = pdsRocks.fill();
     let rockGeo = new THREE.DodecahedronGeometry(0.2);
@@ -117,63 +198,6 @@ class ForestZone extends Zone {
     rocks.receiveShadow = true;
     rocks.castShadow = true;
 
-    // Instance setup
-    const colorBase = new THREE.Color(0x2d4c1e);
-    const colorAutumn = new THREE.Color(0x556622);
-    const dummy = new THREE.Object3D();
-
-    // Setup Trees
-    points.forEach((p, i) => {
-        const x = p.x - 90;
-        const z = p.y - 90;
-
-        let y = noise(x * 0.03, z * 0.03) * 3;
-        y += noise(x * 0.1, z * 0.1) * 0.5;
-
-        // Trunk
-        dummy.position.set(x, y + 1, z);
-        dummy.rotation.set(0, Math.random() * Math.PI, 0);
-        // Tilt slightly
-        const tiltX = (Math.random() - 0.5) * 0.2;
-        const tiltZ = (Math.random() - 0.5) * 0.2;
-        dummy.rotation.x = tiltX;
-        dummy.rotation.z = tiltZ;
-
-        const scale = 0.8 + Math.random() * 0.6;
-        dummy.scale.set(scale, scale, scale);
-        dummy.updateMatrix();
-        trunks.setMatrixAt(i, dummy.matrix);
-
-        // Leaves Layers
-        // Color variation
-        tempColor.copy(colorBase).lerp(colorAutumn, Math.random() * 0.5);
-        tempColor.multiplyScalar(0.8 + Math.random() * 0.4);
-
-        // Helper to place layer
-        const placeLayer = (mesh, yOffset) => {
-             dummy.position.set(0, yOffset * scale, 0);
-             dummy.position.applyEuler(new THREE.Euler(tiltX, Math.random() * Math.PI, tiltZ)); // Random Y rot for each layer
-             dummy.position.add(new THREE.Vector3(x, y + 1, z)); // Relative to trunk base (y+1 is center of trunk)
-             // Actually y+1 is center of 2 unit high trunk. Base is at y.
-             // Trunk is 2 units high. Center at y+1. Top at y+2.
-             // We want leaves to start around y+1 or so.
-
-             dummy.rotation.set(tiltX, Math.random() * Math.PI, tiltZ); // Match tilt
-             dummy.scale.set(scale, scale, scale);
-             dummy.updateMatrix();
-             mesh.setMatrixAt(i, dummy.matrix);
-             mesh.setColorAt(i, tempColor);
-        };
-
-        // Bottom Layer
-        placeLayer(leavesBot, 1.0);
-        // Middle Layer
-        placeLayer(leavesMid, 2.2);
-        // Top Layer
-        placeLayer(leavesTop, 3.2);
-    });
-
-    // Setup Rocks
     rockPoints.forEach((p, i) => {
          const x = p.x - 90;
          const z = p.y - 90;
@@ -187,12 +211,111 @@ class ForestZone extends Zone {
          dummy.updateMatrix();
          rocks.setMatrixAt(i, dummy.matrix);
     });
-
-    this.add(trunks);
-    this.add(leavesBot);
-    this.add(leavesMid);
-    this.add(leavesTop);
     this.add(rocks);
+  }
+
+  createTreeGeometry(seed) {
+     const woodGeos = [];
+     const leafGeos = [];
+
+     // Randomness based on seed/loop
+     const h = 4 + Math.random() * 3; // Height 4-7
+
+     // Trunk
+     const trunk = new THREE.CylinderGeometry(0.2, 0.4, h, 7);
+     trunk.translate(0, h/2, 0);
+     distortGeometry(trunk, 2, 0.05);
+     woodGeos.push(trunk);
+
+     // Branches
+     const layers = 6;
+     const colorBase = new THREE.Color(0x2d4c1e);
+     const colorVar = new THREE.Color(0x556622);
+     const tempColor = new THREE.Color();
+
+     for (let i = 0; i < layers; i++) {
+        const t = i / layers;
+        const y = 1.0 + t * (h - 1.5);
+        const radius = 2.0 * (1 - t) + 0.5;
+
+        const numBranches = 3 + Math.floor(Math.random() * 3);
+
+        for (let j = 0; j < numBranches; j++) {
+            const angle = (j / numBranches) * Math.PI * 2 + Math.random() * 0.5;
+            const len = radius * (0.6 + Math.random() * 0.6);
+
+            // Branch Wood
+            const branch = new THREE.CylinderGeometry(0.04, 0.1, len, 4);
+            branch.translate(0, len/2, 0);
+            branch.rotateZ(Math.PI / 2 + 0.1); // Angle down
+            branch.rotateY(angle);
+            branch.translate(0, y, 0);
+            distortGeometry(branch, 3, 0.02);
+            woodGeos.push(branch);
+
+            // Leaf Cluster
+            // Multiple cones per branch end for volume
+            const clusters = 2;
+            for (let k=0; k<clusters; k++) {
+                const leaf = new THREE.ConeGeometry(0.5, 1.0, 5);
+                leaf.translate(0, 0.5, 0);
+
+                // Randomize leaf color
+                const mix = Math.random();
+                tempColor.copy(colorBase).lerp(colorVar, mix).multiplyScalar(0.8 + Math.random() * 0.4);
+
+                // Add color attribute
+                const count = leaf.attributes.position.count;
+                const colors = new Float32Array(count * 3);
+                for(let c=0; c<count; c++) {
+                    colors[c*3] = tempColor.r;
+                    colors[c*3+1] = tempColor.g;
+                    colors[c*3+2] = tempColor.b;
+                }
+                leaf.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+                // Position at end of branch with some variation
+                const distAlong = len * (0.7 + Math.random() * 0.3);
+
+                // Calculate position of branch point
+                // Branch was rotated Z by PI/2+0.1. So it points mostly in X (if Y rot is 0).
+                // Then rotated Y by angle.
+
+                // Local branch vector
+                const vec = new THREE.Vector3(0, 1, 0); // Up
+                vec.applyAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 2 + 0.1);
+                vec.applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);
+                vec.multiplyScalar(distAlong);
+
+                leaf.rotateX(Math.random());
+                leaf.rotateY(Math.random());
+                leaf.translate(vec.x, y + vec.y, vec.z); // Relative to trunk center at y
+
+                distortGeometry(leaf, 2, 0.1);
+                leafGeos.push(leaf);
+            }
+        }
+     }
+
+     // Top
+     const top = new THREE.ConeGeometry(0.6, 1.5, 5);
+     top.translate(0, h, 0);
+     tempColor.copy(colorBase).lerp(colorVar, 0.5);
+     const count = top.attributes.position.count;
+     const colors = new Float32Array(count * 3);
+     for(let c=0; c<count; c++) {
+        colors[c*3] = tempColor.r;
+        colors[c*3+1] = tempColor.g;
+        colors[c*3+2] = tempColor.b;
+     }
+     top.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+     distortGeometry(top, 2, 0.1);
+     leafGeos.push(top);
+
+     return {
+        wood: mergeGeometries(woodGeos),
+        leaves: mergeGeometries(leafGeos)
+     };
   }
 }
 

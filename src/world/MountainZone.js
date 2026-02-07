@@ -43,39 +43,71 @@ class MountainZone extends Zone {
         const x = positions.getX(i);
         const y = positions.getY(i); // Z in world
 
-        // Create a valley path in the middle (x near 0)
-        // Mountains on sides
         const distFromCenter = Math.abs(x);
 
-        // Multi-octave noise for mountains
-        let n = noise(x * 0.03, y * 0.03) * 15;
-        n += noise(x * 0.1, y * 0.1) * 4;
-        n += noise(x * 0.2, y * 0.2) * 1;
+        // Ridged noise for sharp peaks
+        // 1 - abs(noise) creates ridges
+        let nBase = noise(x * 0.015, y * 0.015);
+        let ridged = 1.0 - Math.abs(nBase);
+        ridged = Math.pow(ridged, 3.0); // Sharpen ridges
 
-        let height = 0;
+        let height = ridged * 50;
 
-        // Valley factor
+        // Secondary shapes
+        height += noise(x * 0.05, y * 0.05) * 5;
+
+        // Detail
+        height += noise(x * 0.2, y * 0.2) * 1.0;
+        height += noise(x * 0.5, y * 0.5) * 0.2;
+
+        // Valley masking
         // Smooth step function to flat valley floor
-        let valley = Math.pow(Math.min(1.0, distFromCenter / 40.0), 2.0);
+        let valley = Math.min(1.0, distFromCenter / 60.0);
+        valley = valley * valley * (3 - 2 * valley); // Smoothstep
 
-        height = n * valley; // Flatten near center
+        height *= valley; // Flatten near center
 
-        // General slope up away from center
-        if (distFromCenter > 10) {
-            height += (distFromCenter - 10) * 0.3;
+        // General slope up away from center to enclose valley
+        if (distFromCenter > 20) {
+            height += (distFromCenter - 20) * 0.4;
+        }
+
+        // Add random slight variation to break perfect valley floor
+        if (distFromCenter < 20) {
+            height += noise(x * 0.1, y * 0.1) * 0.5;
         }
 
         positions.setZ(i, height);
 
         // Colors
-        if (height > 15) {
-             tempColor.copy(colorSnow);
-        } else if (height > 8) {
-             let t = (height - 8) / 7.0;
+        // Snow based on height and noise
+        let snowNoise = noise(x * 0.05, y * 0.05) * 8; // Large variation
+        let detailNoise = noise(x * 0.5, y * 0.5);
+
+        let snowLine = 20 + snowNoise;
+
+        // Rock/Grass transition at bottom
+        let lowLine = 5 + noise(x * 0.1, y * 0.1) * 3;
+
+        if (height > snowLine) {
+             // Pure snow or mixed
+             let t = (height - snowLine) / 5.0;
+             t = Math.min(1, t + detailNoise * 0.2);
              tempColor.copy(colorRock).lerp(colorSnow, t);
+        } else if (height > lowLine) {
+             // Rock
+             let t = (height - lowLine) / (snowLine - lowLine);
+             // Mix in some snow patches
+             if (detailNoise > 0.6 && height > 15) {
+                 tempColor.copy(colorRock).lerp(colorSnow, 0.5);
+             } else {
+                 tempColor.copy(colorLow).lerp(colorRock, t);
+             }
         } else {
-             let t = Math.max(0, height / 8.0);
-             tempColor.copy(colorLow).lerp(colorRock, t);
+             // Low (grass/moss)
+             tempColor.copy(colorLow);
+             // Variation
+             tempColor.multiplyScalar(0.9 + detailNoise * 0.2);
         }
 
         colors.setXYZ(i, tempColor.r, tempColor.g, tempColor.b);

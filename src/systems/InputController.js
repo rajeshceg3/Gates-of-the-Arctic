@@ -32,6 +32,7 @@ class InputController {
     document.addEventListener('touchend', (e) => this._onTouchEnd(e));
 
     this.touchStart = { x: 0, y: 0 };
+    this.touchOriginY = 0;
   }
 
   _onKeyDown(event) {
@@ -81,6 +82,7 @@ class InputController {
     if (event.touches.length === 1) {
       this.touchStart.x = event.touches[0].clientX;
       this.touchStart.y = event.touches[0].clientY;
+      this.touchOriginY = event.touches[0].clientY;
     }
   }
 
@@ -91,22 +93,35 @@ class InputController {
     if (event.touches.length === 1) {
       const touch = event.touches[0];
       const deltaX = touch.clientX - this.touchStart.x;
-      const deltaY = touch.clientY - this.touchStart.y;
 
-      // Update look based on drag
+      // Calculate vertical delta from ORIGIN for movement (accumulated drag)
+      const deltaY = touch.clientY - this.touchOriginY;
+
+      // Update look based on incremental horizontal drag
       this.look.x -= deltaX * this.lookSensitivity * 2;
 
-      // Simple forward drift based on vertical drag
-      // If dragging up (negative deltaY), move forward
-      const threshold = 50;
-      if (deltaY < -threshold) {
-        this.move.z = 1;
-      } else if (deltaY > threshold) {
-        this.move.z = -1;
-      } else {
+      // Accumulated vertical drag for movement
+      // Map deltaY to speed (-1 to 1) with deadzone
+      const threshold = 30; // Deadzone in pixels
+      const maxDrag = 150; // Pixels for full speed
+
+      if (Math.abs(deltaY) < threshold) {
         this.move.z = 0;
+      } else {
+        // Normalize speed (0 to 1)
+        let speed = (Math.abs(deltaY) - threshold) / (maxDrag - threshold);
+        speed = Math.min(speed, 1.0);
+
+        // Direction: Drag Up (negative deltaY) -> Forward (+z for CameraRig logic)
+        // Drag Down (positive deltaY) -> Backward (-z)
+        if (deltaY < 0) {
+            this.move.z = speed;
+        } else {
+            this.move.z = -speed;
+        }
       }
 
+      // Update touchStart for incremental look calculation
       this.touchStart.x = touch.clientX;
       this.touchStart.y = touch.clientY;
     }

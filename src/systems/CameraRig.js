@@ -11,7 +11,7 @@ class CameraRig {
 
     // Physics/Movement params
     this.velocity = new Vector3();
-    this.maxSpeed = 3.0; // slow walking speed
+    this.maxSpeed = 1.8; // slow walking speed (1.8m/s)
     this.smoothing = 2.0; // Lower = more inertia (calm)
 
     this.pitch = 0;

@@ -31,6 +31,7 @@ class AudioManager {
     const noiseBuffer = this.context.createBuffer(1, bufferSize, this.context.sampleRate);
     const output = noiseBuffer.getChannelData(0);
 
+    let lastOut = 0;
     for (let i = 0; i < bufferSize; i++) {
         // Simple white noise
         const white = Math.random() * 2 - 1;
@@ -65,8 +66,5 @@ class AudioManager {
     }, 2000);
   }
 }
-
-// Global variable for pink noise calculation state
-let lastOut = 0;
 
 export { AudioManager };

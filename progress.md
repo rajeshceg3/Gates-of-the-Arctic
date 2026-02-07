@@ -13,9 +13,12 @@
     - [x] Verified build.
 - [x] Implement Input Controller
     - [x] Created `src/systems/InputController.js`.
+    - [x] Implemented Desktop WASD/Mouse controls.
+    - [x] Implemented Mobile Touch controls with accumulated vertical drag (drift) and incremental horizontal drag (look).
     - [x] Verified build.
 - [x] Implement Camera Rig
     - [x] Created `src/systems/CameraRig.js` with smooth movement/look.
+    - [x] Tuned speed to 1.8m/s for calm walking pace.
     - [x] Integrated into `main.js`.
     - [x] Verified build.
 - [x] Implement Zone Architecture
@@ -36,6 +39,7 @@
     - [x] Verified build.
 - [x] Audio and Polish
     - [x] Created `src/systems/AudioManager.js` with procedural wind.
+    - [x] Fixed audio generation scope issues.
     - [x] Added minimal UI with fade out.
     - [x] Verified build.
 - [x] Implement Forest Zone (Zone 4)
@@ -61,7 +65,12 @@
     - [x] Improved water material and lighting.
 - [x] Final Polish
     - [x] Implemented Zone Labels with fade in/out animations.
+    - [x] Refined mobile input sensitivity and mechanics.
+    - [x] Tuned walking speed.
 
 ## In Progress
 
 ## Backlog
+
+## Completion Status
+- MVP Completion: 100%

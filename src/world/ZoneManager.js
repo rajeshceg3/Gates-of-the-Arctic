@@ -52,17 +52,28 @@ class ZoneManager {
     }
 
     // Update Zone Label
+    this.showLabel(name);
+  }
+
+  showLabel(name) {
     const label = document.getElementById('zone-label');
     if (label) {
         if (this.labelTimeout) clearTimeout(this.labelTimeout);
 
-        label.textContent = name.toUpperCase() + ' ZONE';
-        label.classList.add('visible');
+        label.classList.remove('label-visible');
+
+        // Wait for class removal to register
+        setTimeout(() => {
+            label.textContent = name.toUpperCase();
+            label.classList.add('label-visible');
+            label.style.setProperty('opacity', '1', 'important');
+        }, 50);
 
         // Remove label after a delay
         this.labelTimeout = setTimeout(() => {
-            label.classList.remove('visible');
-        }, 4000);
+            label.classList.remove('label-visible');
+            label.style.removeProperty('opacity');
+        }, 5000);
     }
   }
 

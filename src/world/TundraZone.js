@@ -11,7 +11,7 @@ class TundraZone extends Zone {
     // Environment
     if (scene) {
         scene.background = new THREE.Color(0xdbe9f4);
-        scene.fog = new THREE.FogExp2(0xdbe9f4, 0.02);
+        scene.fog = new THREE.FogExp2(0xdbe9f4, 0.002); // Reduced fog density for vastness
     }
 
     // Lighting
@@ -20,15 +20,29 @@ class TundraZone extends Zone {
     this.add(hemiLight);
 
     const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    dirLight.position.set(-50, 20, -50); // Low sun angle
+    dirLight.position.set(-50, 50, -50); // Low sun angle
     dirLight.castShadow = true;
     dirLight.shadow.bias = -0.0005;
     dirLight.shadow.mapSize.width = 2048;
     dirLight.shadow.mapSize.height = 2048;
+
+    // Configure shadow camera
+    const d = 100;
+    dirLight.shadow.camera.left = -d;
+    dirLight.shadow.camera.right = d;
+    dirLight.shadow.camera.top = d;
+    dirLight.shadow.camera.bottom = -d;
+    dirLight.shadow.camera.far = 3500;
+
     this.add(dirLight);
+    this.dirLight = dirLight;
+
+    // Ensure target is added so we can move it
+    this.add(dirLight.target);
 
     // Terrain
-    const geometry = new THREE.PlaneGeometry(200, 200, 256, 256); // Increased resolution
+    const size = 2000;
+    const geometry = new THREE.PlaneGeometry(size, size, 512, 512); // Increased resolution and size
     const count = geometry.attributes.position.count;
 
     // Create color attribute
@@ -98,7 +112,9 @@ class TundraZone extends Zone {
     const rockMat = new THREE.MeshStandardMaterial({ color: 0x666666, flatShading: false, roughness: 0.8 });
 
     // Poisson Sampling
-    const pds = new PoissonDiskSampling(180, 180, 5, 30);
+    const sampleSize = 1900;
+    const offset = sampleSize / 2;
+    const pds = new PoissonDiskSampling(sampleSize, sampleSize, 10, 30); // Increased spacing to manage count
     const points = pds.fill();
 
     const rocks = new THREE.InstancedMesh(rockGeo, rockMat, points.length);
@@ -106,7 +122,7 @@ class TundraZone extends Zone {
     rocks.receiveShadow = true;
 
     // Pebbles (Small rocks)
-    const pdsPebbles = new PoissonDiskSampling(180, 180, 1.5, 10);
+    const pdsPebbles = new PoissonDiskSampling(sampleSize, sampleSize, 8, 10);
     const pebblePoints = pdsPebbles.fill();
     let pebbleGeo = new THREE.DodecahedronGeometry(0.15);
     pebbleGeo = distortGeometry(pebbleGeo, 5, 0.05);
@@ -120,8 +136,8 @@ class TundraZone extends Zone {
 
     // Setup Rocks
     points.forEach((p, i) => {
-        const x = p.x - 90;
-        const z = p.y - 90;
+        const x = p.x - offset;
+        const z = p.y - offset;
 
         let yHeight = noise(x * 0.05, z * 0.05) * 2;
         yHeight += noise(x * 0.1, z * 0.1) * 0.5;
@@ -142,8 +158,8 @@ class TundraZone extends Zone {
 
     // Setup Pebbles
     pebblePoints.forEach((p, i) => {
-        const x = p.x - 90;
-        const z = p.y - 90;
+        const x = p.x - offset;
+        const z = p.y - offset;
 
         let yHeight = noise(x * 0.05, z * 0.05) * 2;
         yHeight += noise(x * 0.1, z * 0.1) * 0.5;
@@ -162,6 +178,17 @@ class TundraZone extends Zone {
 
     this.add(rocks);
     this.add(pebbles);
+  }
+
+  tick(delta, camera) {
+      if (camera && this.dirLight) {
+          const x = camera.position.x;
+          const z = camera.position.z;
+
+          this.dirLight.position.set(x - 50, 50, z - 50);
+          this.dirLight.target.position.set(x, 0, z);
+          this.dirLight.target.updateMatrixWorld();
+      }
   }
 }
 

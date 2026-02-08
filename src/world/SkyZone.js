@@ -9,7 +9,7 @@ class SkyZone extends Zone {
     // Environment
     if (scene) {
         scene.background = new THREE.Color(0x050510); // Almost black
-        scene.fog = new THREE.FogExp2(0x050510, 0.01); // Less fog to see stars
+        scene.fog = new THREE.FogExp2(0x050510, 0.001); // Less fog to see stars
     }
 
     // Lighting (Night)
@@ -20,15 +20,18 @@ class SkyZone extends Zone {
     const moonLight = new THREE.DirectionalLight(0xaaccff, 0.2);
     moonLight.position.set(0, 50, -50);
     this.add(moonLight);
+    this.moonLight = moonLight;
+    this.add(moonLight.target);
 
     // Terrain (Ice sheet, very dark)
-    const geometry = new THREE.PlaneGeometry(300, 300, 64, 64); // Slightly better res
+    const size = 2000;
+    const geometry = new THREE.PlaneGeometry(size, size, 128, 128); // Slightly better res
     // Add some subtle noise to ice
     const pos = geometry.attributes.position;
     for(let i=0; i<pos.count; i++){
         const x = pos.getX(i);
         const y = pos.getY(i);
-        pos.setZ(i, noise(x*0.1, y*0.1)*0.5);
+        pos.setZ(i, noise(x*0.05, y*0.05)*1.0);
     }
     geometry.computeVertexNormals();
 
@@ -45,13 +48,13 @@ class SkyZone extends Zone {
 
     // Stars
     const starsGeo = new THREE.BufferGeometry();
-    const starCount = 3000;
+    const starCount = 10000;
     const starPos = new Float32Array(starCount * 3);
 
     for(let i=0; i<starCount; i++) {
-        const x = (Math.random() - 0.5) * 400;
-        const y = 10 + Math.random() * 150;
-        const z = (Math.random() - 0.5) * 400;
+        const x = (Math.random() - 0.5) * 3000;
+        const y = 10 + Math.random() * 500;
+        const z = (Math.random() - 0.5) * 3000;
 
         starPos[i*3] = x;
         starPos[i*3+1] = y;
@@ -65,10 +68,11 @@ class SkyZone extends Zone {
 
     // Aurora (Simple ribbons)
     const auroraGroup = new THREE.Group();
-    const auroraCount = 6;
+    const auroraCount = 10;
 
     for (let k = 0; k < auroraCount; k++) {
-        const ribbonGeo = new THREE.PlaneGeometry(150, 40, 64, 4);
+        const width = 1000 + Math.random() * 1000;
+        const ribbonGeo = new THREE.PlaneGeometry(width, 200, 128, 4);
         const ribbonPos = ribbonGeo.attributes.position;
 
         // Wavy ribbon driven by noise
@@ -77,7 +81,7 @@ class SkyZone extends Zone {
             const y = ribbonPos.getY(i); // Height of ribbon
 
             // Offset Z based on X and Y and ID
-            const z = noise(x * 0.02, k + y * 0.05) * 20;
+            const z = noise(x * 0.005, k + y * 0.02) * 50;
 
             ribbonPos.setZ(i, z);
         }
@@ -93,14 +97,25 @@ class SkyZone extends Zone {
         });
 
         const ribbon = new THREE.Mesh(ribbonGeo, ribbonMat);
-        ribbon.position.set((Math.random()-0.5)*50, 40 + Math.random()*10, (Math.random()-0.5)*50);
+        ribbon.position.set((Math.random()-0.5)*1500, 200 + Math.random()*50, (Math.random()-0.5)*1500);
         // Tilt to follow sky dome curvature roughly
         ribbon.rotation.x = (Math.random()-0.5) * 0.5;
-        ribbon.rotation.y = (Math.random()-0.5) * 1.0;
+        ribbon.rotation.y = (Math.random()-0.5) * 3.0; // Random yaw
 
         auroraGroup.add(ribbon);
     }
     this.add(auroraGroup);
+  }
+
+  tick(delta, camera) {
+      if (camera && this.moonLight) {
+          const x = camera.position.x;
+          const z = camera.position.z;
+
+          this.moonLight.position.set(x, 50, z - 50);
+          this.moonLight.target.position.set(x, 0, z);
+          this.moonLight.target.updateMatrixWorld();
+      }
   }
 }
 

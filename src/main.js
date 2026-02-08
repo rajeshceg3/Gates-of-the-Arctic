@@ -17,7 +17,7 @@ async function main() {
   scene.background = new THREE.Color(0xdbe9f4); // Pale atmospheric blue
   scene.fog = new THREE.FogExp2(0xdbe9f4, 0.02);
 
-  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 3000);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -30,7 +30,7 @@ async function main() {
   const loop = new Loop(camera, scene, renderer);
   const input = new InputController();
   const rig = new CameraRig(camera, input, scene);
-  const zoneManager = new ZoneManager(scene);
+  const zoneManager = new ZoneManager(scene, camera);
   const audio = new AudioManager();
 
   // Initialize audio and hide UI on first user interaction

@@ -16,11 +16,11 @@ class RiverZone extends Zone {
     // Environment
     if (scene) {
         scene.background = new THREE.Color(0xdbe9f4);
-        scene.fog = new THREE.FogExp2(0xaaccdd, 0.015); // Lighter blue fog
+        scene.fog = new THREE.FogExp2(0xaaccdd, 0.002); // Reduced fog
     }
 
     // Sky Sphere
-    const skyGeo = new THREE.SphereGeometry(400, 32, 32);
+    const skyGeo = new THREE.SphereGeometry(3000, 32, 32);
     const skyMat = new THREE.MeshBasicMaterial({
         vertexColors: true,
         side: THREE.BackSide,
@@ -36,7 +36,7 @@ class RiverZone extends Zone {
 
     for(let i=0; i<sCount; i++) {
         const y = sPos.getY(i);
-        const t = (y + 400) / 800;
+        const t = (y + 3000) / 6000;
         if (t > 0.5) {
             const factor = (t - 0.5) * 2;
             tempColor.copy(horizonColor).lerp(topColor, Math.pow(factor, 0.5));
@@ -62,10 +62,21 @@ class RiverZone extends Zone {
     dirLight.shadow.bias = -0.0005;
     dirLight.shadow.mapSize.width = 2048;
     dirLight.shadow.mapSize.height = 2048;
+
+    const d = 150;
+    dirLight.shadow.camera.left = -d;
+    dirLight.shadow.camera.right = d;
+    dirLight.shadow.camera.top = d;
+    dirLight.shadow.camera.bottom = -d;
+    dirLight.shadow.camera.far = 3500;
+
     this.add(dirLight);
+    this.dirLight = dirLight;
+    this.add(dirLight.target);
 
     // Terrain
-    const geometry = new THREE.PlaneGeometry(200, 200, 256, 256);
+    const size = 2000;
+    const geometry = new THREE.PlaneGeometry(size, size, 512, 512);
     const count = geometry.attributes.position.count;
     geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
 
@@ -83,20 +94,23 @@ class RiverZone extends Zone {
         const x = positions.getX(i);
         const y = positions.getY(i);
 
-        const meander = noise(y * 0.02) * 30;
+        // Scaled up river
+        const meander = noise(y * 0.003) * 300;
         const distFromRiver = Math.abs(x - meander);
 
         let height = 0;
+        const riverWidth = 50;
+        const bankWidth = 150;
 
-        if (distFromRiver < 8) {
-            const normalized = distFromRiver / 8;
-            height = -4 + Math.pow(normalized, 2) * 4; // Deeper river
-        } else if (distFromRiver < 20) {
-            height = (distFromRiver - 8) * 0.3;
-            height += noise(x * 0.2, y * 0.2) * 0.5;
+        if (distFromRiver < riverWidth) {
+            const normalized = distFromRiver / riverWidth;
+            height = -8 + Math.pow(normalized, 2) * 8; // Deeper river
+        } else if (distFromRiver < (riverWidth + bankWidth)) {
+            height = (distFromRiver - riverWidth) * 0.1; // Gentle slope
+            height += noise(x * 0.1, y * 0.1) * 2.0;
         } else {
-            height = 3.6 + noise(x * 0.04, y * 0.04) * 2.0;
-            height += noise(x * 0.1, y * 0.1) * 0.5;
+            height = 15.0 + noise(x * 0.02, y * 0.02) * 10.0;
+            height += noise(x * 0.1, y * 0.1) * 1.0;
         }
 
         positions.setZ(i, height);
@@ -108,8 +122,8 @@ class RiverZone extends Zone {
 
         if (height < 0.0) {
              tempColor.copy(colorSand).lerp(colorRock, 0.3);
-        } else if (height < 3.0) {
-             let t = height / 3.0;
+        } else if (height < 5.0) {
+             let t = height / 5.0;
              t += n * 0.2;
              t = Math.max(0, Math.min(1, t));
              tempColor.copy(colorSand).lerp(colorGrass, t);
@@ -136,7 +150,8 @@ class RiverZone extends Zone {
     this.add(terrain);
 
     // Water Plane
-    const waterGeo = new THREE.PlaneGeometry(200, 200, 128, 128); // Higher res for waves
+    // Use lower res for CPU animation perf, but cover full area
+    const waterGeo = new THREE.PlaneGeometry(size, size, 128, 128);
     const waterMat = new THREE.MeshPhysicalMaterial({
         color: 0x55aaff,
         roughness: 0.1,
@@ -149,7 +164,7 @@ class RiverZone extends Zone {
     });
     this.water = new THREE.Mesh(waterGeo, waterMat);
     this.water.rotation.x = -Math.PI / 2;
-    this.water.position.y = -0.8;
+    this.water.position.y = -2.0; // Slightly lower water level
     this.add(this.water);
 
     // Store original water positions for wave calculation
@@ -157,12 +172,12 @@ class RiverZone extends Zone {
 
     // Rocks
     // Large Boulders
-    const pdsLarge = new PoissonDiskSampling(180, 180, 10, 30);
-    this.addRocks(pdsLarge.fill(), 1.5, 3.0, 0x666666);
+    const pdsLarge = new PoissonDiskSampling(1900, 1900, 30, 30);
+    this.addRocks(pdsLarge.fill(), 3.0, 6.0, 0x666666);
 
     // Small Rocks
-    const pdsSmall = new PoissonDiskSampling(180, 180, 3, 15);
-    this.addRocks(pdsSmall.fill(), 0.3, 0.8, 0x555555);
+    const pdsSmall = new PoissonDiskSampling(1900, 1900, 10, 15);
+    this.addRocks(pdsSmall.fill(), 0.5, 1.5, 0x555555);
   }
 
   addRocks(points, minScale, maxScale, colorHex) {
@@ -175,24 +190,25 @@ class RiverZone extends Zone {
       const dummy = new THREE.Object3D();
       let count = 0;
 
+      const offset = 950; // 1900/2
+
       points.forEach((p, i) => {
-          const x = p.x - 90;
-          const z = p.y - 90;
+          const x = p.x - offset;
+          const z = p.y - offset;
 
           // Recompute height or approx
-          // Use noise to find river
-          const meander = noise(z * 0.02) * 30;
+          const meander = noise(z * 0.003) * 300;
           const dist = Math.abs(x - meander);
 
           // Place rocks on banks or shallow water
-          // River width 8.
-          // Banks 8 to 20.
-          if (dist > 4 && dist < 25) {
+          // River width 50.
+          // Banks up to 200.
+          if (dist > 20 && dist < 180) {
                // Calculate height roughly
                let h = 0;
-               if (dist < 8) h = -4 + Math.pow(dist/8, 2)*4;
-               else h = (dist - 8) * 0.3;
-               h += noise(x*0.2, z*0.2)*0.5;
+               if (dist < 50) h = -8 + Math.pow(dist/50, 2)*8;
+               else h = (dist - 50) * 0.1;
+               h += noise(x*0.1, z*0.1)*2.0;
 
                dummy.position.set(x, h + minScale * 0.5, z);
                dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
@@ -206,30 +222,35 @@ class RiverZone extends Zone {
       this.add(mesh);
   }
 
-  tick(delta) {
+  tick(delta, camera) {
       this.time += delta;
 
       // Animate Water
       if (this.water) {
           const pos = this.water.geometry.attributes.position;
-          const base = this.waterBaseZ; // Note: PlaneGeometry positions are flat, Z=0 usually.
-          // Wait, BufferAttribute array is [x,y,z, x,y,z...].
-          // PlaneGeometry(w, h) lies in XY plane. Z is 0.
-          // We iterate through vertices.
 
           for(let i=0; i<pos.count; i++) {
               const x = pos.getX(i);
               const y = pos.getY(i);
 
-              // Wave function
-              let z = Math.sin(x * 0.5 + this.time) * 0.2;
-              z += Math.sin(y * 0.3 + this.time * 0.8) * 0.2;
-              z += noise(x * 0.2 + this.time, y * 0.2) * 0.3;
+              // Wave function (Scaled for larger world)
+              let z = Math.sin(x * 0.05 + this.time) * 0.5;
+              z += Math.sin(y * 0.03 + this.time * 0.8) * 0.5;
+              z += noise(x * 0.02 + this.time, y * 0.02) * 0.5;
 
               pos.setZ(i, z);
           }
           pos.needsUpdate = true;
           this.water.geometry.computeVertexNormals();
+      }
+
+      if (camera && this.dirLight) {
+          const x = camera.position.x;
+          const z = camera.position.z;
+
+          this.dirLight.position.set(x + 20, 50, z - 30);
+          this.dirLight.target.position.set(x, 0, z);
+          this.dirLight.target.updateMatrixWorld();
       }
   }
 }

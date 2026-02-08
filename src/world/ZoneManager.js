@@ -1,6 +1,7 @@
 class ZoneManager {
-  constructor(scene) {
+  constructor(scene, camera) {
     this.scene = scene;
+    this.camera = camera;
     this.currentZone = null;
     this.zones = {};
     this.labelTimeout = null;
@@ -61,7 +62,7 @@ class ZoneManager {
 
   tick(delta) {
     if (this.currentZone) {
-      this.currentZone.tick(delta);
+      this.currentZone.tick(delta, this.camera);
     }
   }
 }

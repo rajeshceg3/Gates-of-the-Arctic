@@ -13,11 +13,11 @@ class ForestZone extends Zone {
     if (scene) {
         scene.background = new THREE.Color(0x223344);
         // Fog color matches horizon for seamless blend
-        scene.fog = new THREE.FogExp2(0x445566, 0.0025);
+        scene.fog = new THREE.FogExp2(0x445566, 0.0005); // Reduced for vastness
     }
 
     // Sky
-    const skyGeo = new THREE.SphereGeometry(3000, 32, 32);
+    const skyGeo = new THREE.SphereGeometry(6000, 32, 32);
     const skyMat = new THREE.MeshBasicMaterial({
         vertexColors: true,
         side: THREE.BackSide,
@@ -35,7 +35,7 @@ class ForestZone extends Zone {
 
     for(let i=0; i<count; i++) {
         const y = pos.getY(i);
-        // y ranges from -3000 to 3000.
+        // y ranges from -3000 to 3000 (roughly with 6000 radius)
         const t = (y + 3000) / 6000;
 
         if (t > 0.5) {
@@ -69,20 +69,20 @@ class ForestZone extends Zone {
     dirLight.shadow.mapSize.width = 2048;
     dirLight.shadow.mapSize.height = 2048;
 
-    const d = 150;
+    const d = 200;
     dirLight.shadow.camera.left = -d;
     dirLight.shadow.camera.right = d;
     dirLight.shadow.camera.top = d;
     dirLight.shadow.camera.bottom = -d;
-    dirLight.shadow.camera.far = 3500;
+    dirLight.shadow.camera.far = 4000;
 
     this.add(dirLight);
     this.dirLight = dirLight;
     this.add(dirLight.target);
 
     // Terrain
-    const size = 2000;
-    const geometry = new THREE.PlaneGeometry(size, size, 512, 512);
+    const size = 5000;
+    const geometry = new THREE.PlaneGeometry(size, size, 1024, 1024);
 
     // Vertex Colors
     const vCount = geometry.attributes.position.count;
@@ -146,9 +146,9 @@ class ForestZone extends Zone {
     });
 
     // Poisson Sampling for trees
-    const sampleSize = 1900;
+    const sampleSize = 4900;
     const offset = sampleSize / 2;
-    const pds = new PoissonDiskSampling(sampleSize, sampleSize, 15, 30); // Spacing 15 (less dense but large area)
+    const pds = new PoissonDiskSampling(sampleSize, sampleSize, 30, 30); // Less dense for huge area
     const points = pds.fill();
 
     // Group points by type
@@ -202,7 +202,7 @@ class ForestZone extends Zone {
     }
 
     // Small rocks/debris (Recycled logic)
-    const pdsRocks = new PoissonDiskSampling(sampleSize, sampleSize, 10, 10);
+    const pdsRocks = new PoissonDiskSampling(sampleSize, sampleSize, 30, 30); // Less dense rocks
     const rockPoints = pdsRocks.fill();
     let rockGeo = new THREE.DodecahedronGeometry(0.2);
     rockGeo = distortGeometry(rockGeo, 10, 0.1);

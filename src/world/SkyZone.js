@@ -9,7 +9,7 @@ class SkyZone extends Zone {
     // Environment
     if (scene) {
         scene.background = new THREE.Color(0x050510); // Almost black
-        scene.fog = new THREE.FogExp2(0x050510, 0.001); // Less fog to see stars
+        scene.fog = new THREE.FogExp2(0x050510, 0.0005); // Less fog to see stars
     }
 
     // Lighting (Night)
@@ -24,8 +24,8 @@ class SkyZone extends Zone {
     this.add(moonLight.target);
 
     // Terrain (Ice sheet, very dark)
-    const size = 2000;
-    const geometry = new THREE.PlaneGeometry(size, size, 128, 128); // Slightly better res
+    const size = 5000;
+    const geometry = new THREE.PlaneGeometry(size, size, 512, 512); // Slightly better res
     // Add some subtle noise to ice
     const pos = geometry.attributes.position;
     for(let i=0; i<pos.count; i++){
@@ -48,13 +48,13 @@ class SkyZone extends Zone {
 
     // Stars
     const starsGeo = new THREE.BufferGeometry();
-    const starCount = 10000;
+    const starCount = 20000; // More stars for vast sky
     const starPos = new Float32Array(starCount * 3);
 
     for(let i=0; i<starCount; i++) {
-        const x = (Math.random() - 0.5) * 3000;
-        const y = 10 + Math.random() * 500;
-        const z = (Math.random() - 0.5) * 3000;
+        const x = (Math.random() - 0.5) * 8000;
+        const y = 10 + Math.random() * 2000;
+        const z = (Math.random() - 0.5) * 8000;
 
         starPos[i*3] = x;
         starPos[i*3+1] = y;
@@ -62,17 +62,17 @@ class SkyZone extends Zone {
     }
     starsGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
 
-    const starsMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.4, transparent: true, opacity: 0.8, sizeAttenuation: true });
+    const starsMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.8, transparent: true, opacity: 0.8, sizeAttenuation: true });
     const stars = new THREE.Points(starsGeo, starsMat);
     this.add(stars);
 
     // Aurora (Simple ribbons)
     const auroraGroup = new THREE.Group();
-    const auroraCount = 10;
+    const auroraCount = 15;
 
     for (let k = 0; k < auroraCount; k++) {
-        const width = 1000 + Math.random() * 1000;
-        const ribbonGeo = new THREE.PlaneGeometry(width, 200, 128, 4);
+        const width = 2000 + Math.random() * 2000;
+        const ribbonGeo = new THREE.PlaneGeometry(width, 400, 256, 4);
         const ribbonPos = ribbonGeo.attributes.position;
 
         // Wavy ribbon driven by noise
@@ -81,7 +81,7 @@ class SkyZone extends Zone {
             const y = ribbonPos.getY(i); // Height of ribbon
 
             // Offset Z based on X and Y and ID
-            const z = noise(x * 0.005, k + y * 0.02) * 50;
+            const z = noise(x * 0.002, k + y * 0.01) * 100;
 
             ribbonPos.setZ(i, z);
         }
@@ -97,7 +97,7 @@ class SkyZone extends Zone {
         });
 
         const ribbon = new THREE.Mesh(ribbonGeo, ribbonMat);
-        ribbon.position.set((Math.random()-0.5)*1500, 200 + Math.random()*50, (Math.random()-0.5)*1500);
+        ribbon.position.set((Math.random()-0.5)*4000, 400 + Math.random()*200, (Math.random()-0.5)*4000);
         // Tilt to follow sky dome curvature roughly
         ribbon.rotation.x = (Math.random()-0.5) * 0.5;
         ribbon.rotation.y = (Math.random()-0.5) * 3.0; // Random yaw

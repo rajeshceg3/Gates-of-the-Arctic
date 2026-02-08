@@ -11,7 +11,7 @@ class TundraZone extends Zone {
     // Environment
     if (scene) {
         scene.background = new THREE.Color(0xdbe9f4);
-        scene.fog = new THREE.FogExp2(0xdbe9f4, 0.002); // Reduced fog density for vastness
+        scene.fog = new THREE.FogExp2(0xdbe9f4, 0.0005); // Reduced fog density for vastness
     }
 
     // Lighting
@@ -27,12 +27,12 @@ class TundraZone extends Zone {
     dirLight.shadow.mapSize.height = 2048;
 
     // Configure shadow camera
-    const d = 100;
+    const d = 200;
     dirLight.shadow.camera.left = -d;
     dirLight.shadow.camera.right = d;
     dirLight.shadow.camera.top = d;
     dirLight.shadow.camera.bottom = -d;
-    dirLight.shadow.camera.far = 3500;
+    dirLight.shadow.camera.far = 4000;
 
     this.add(dirLight);
     this.dirLight = dirLight;
@@ -41,8 +41,8 @@ class TundraZone extends Zone {
     this.add(dirLight.target);
 
     // Terrain
-    const size = 2000;
-    const geometry = new THREE.PlaneGeometry(size, size, 512, 512); // Increased resolution and size
+    const size = 5000;
+    const geometry = new THREE.PlaneGeometry(size, size, 1024, 1024); // Increased resolution and size
     const count = geometry.attributes.position.count;
 
     // Create color attribute
@@ -112,9 +112,9 @@ class TundraZone extends Zone {
     const rockMat = new THREE.MeshStandardMaterial({ color: 0x666666, flatShading: false, roughness: 0.8 });
 
     // Poisson Sampling
-    const sampleSize = 1900;
+    const sampleSize = 4900;
     const offset = sampleSize / 2;
-    const pds = new PoissonDiskSampling(sampleSize, sampleSize, 10, 30); // Increased spacing to manage count
+    const pds = new PoissonDiskSampling(sampleSize, sampleSize, 30, 30); // Increased spacing to manage count
     const points = pds.fill();
 
     const rocks = new THREE.InstancedMesh(rockGeo, rockMat, points.length);
@@ -122,7 +122,7 @@ class TundraZone extends Zone {
     rocks.receiveShadow = true;
 
     // Pebbles (Small rocks)
-    const pdsPebbles = new PoissonDiskSampling(sampleSize, sampleSize, 8, 10);
+    const pdsPebbles = new PoissonDiskSampling(sampleSize, sampleSize, 15, 15);
     const pebblePoints = pdsPebbles.fill();
     let pebbleGeo = new THREE.DodecahedronGeometry(0.15);
     pebbleGeo = distortGeometry(pebbleGeo, 5, 0.05);

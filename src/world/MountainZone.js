@@ -9,7 +9,7 @@ class MountainZone extends Zone {
     // Environment
     if (scene) {
         scene.background = new THREE.Color(0xdbe9f4);
-        scene.fog = new THREE.FogExp2(0xdbe9f4, 0.0025); // Slightly denser fog for depth
+        scene.fog = new THREE.FogExp2(0xdbe9f4, 0.0005); // Reduced fog for vastness
     }
 
     // Lighting
@@ -24,20 +24,20 @@ class MountainZone extends Zone {
     dirLight.shadow.mapSize.width = 2048;
     dirLight.shadow.mapSize.height = 2048;
 
-    const d = 150;
+    const d = 200;
     dirLight.shadow.camera.left = -d;
     dirLight.shadow.camera.right = d;
     dirLight.shadow.camera.top = d;
     dirLight.shadow.camera.bottom = -d;
-    dirLight.shadow.camera.far = 3500;
+    dirLight.shadow.camera.far = 4000;
 
     this.add(dirLight);
     this.dirLight = dirLight;
     this.add(dirLight.target);
 
     // Terrain
-    const size = 2000;
-    const geometry = new THREE.PlaneGeometry(size, size, 512, 512);
+    const size = 5000;
+    const geometry = new THREE.PlaneGeometry(size, size, 1024, 1024);
     const count = geometry.attributes.position.count;
 
     geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
@@ -58,31 +58,31 @@ class MountainZone extends Zone {
 
         // Ridged noise for sharp peaks
         // Scale frequency down to match larger size
-        let nBase = noise(x * 0.003, y * 0.003);
+        let nBase = noise(x * 0.001, y * 0.001); // Reduced freq for larger mountains
         let ridged = 1.0 - Math.abs(nBase);
         ridged = Math.pow(ridged, 3.0); // Sharpen ridges
 
-        let height = ridged * 150; // Taller peaks
+        let height = ridged * 500; // Taller peaks for vastness
 
         // Secondary shapes
-        height += noise(x * 0.01, y * 0.01) * 20;
+        height += noise(x * 0.005, y * 0.005) * 50;
 
         // Detail
         height += noise(x * 0.05, y * 0.05) * 5.0;
         height += noise(x * 0.2, y * 0.2) * 1.0;
 
         // Valley masking
-        // Wider valley
-        const valleyWidth = 300.0;
+        // Wider valley for the larger world
+        const valleyWidth = 600.0;
         let valley = Math.min(1.0, distFromCenter / valleyWidth);
         valley = valley * valley * (3 - 2 * valley); // Smoothstep
 
         height *= valley; // Flatten near center
 
         // General slope up away from center to enclose valley
-        const slopeStart = 100;
+        const slopeStart = 200;
         if (distFromCenter > slopeStart) {
-            height += (distFromCenter - slopeStart) * 0.4;
+            height += (distFromCenter - slopeStart) * 0.3;
         }
 
         // Add random slight variation to break perfect valley floor
@@ -97,21 +97,21 @@ class MountainZone extends Zone {
         let snowNoise = noise(x * 0.01, y * 0.01) * 20;
         let detailNoise = noise(x * 0.1, y * 0.1);
 
-        let snowLine = 100 + snowNoise; // Higher snow line
+        let snowLine = 150 + snowNoise; // Higher snow line
 
         // Rock/Grass transition at bottom
-        let lowLine = 20 + noise(x * 0.02, y * 0.02) * 10;
+        let lowLine = 30 + noise(x * 0.02, y * 0.02) * 10;
 
         if (height > snowLine) {
              // Pure snow or mixed
-             let t = (height - snowLine) / 20.0;
+             let t = (height - snowLine) / 50.0;
              t = Math.min(1, t + detailNoise * 0.2);
              tempColor.copy(colorRock).lerp(colorSnow, t);
         } else if (height > lowLine) {
              // Rock
              let t = (height - lowLine) / (snowLine - lowLine);
              // Mix in some snow patches
-             if (detailNoise > 0.6 && height > 80) {
+             if (detailNoise > 0.6 && height > 120) {
                  tempColor.copy(colorRock).lerp(colorSnow, 0.5);
              } else {
                  tempColor.copy(colorLow).lerp(colorRock, t);

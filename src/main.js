@@ -8,6 +8,8 @@ import { MountainZone } from './world/MountainZone.js';
 import { RiverZone } from './world/RiverZone.js';
 import { ForestZone } from './world/ForestZone.js';
 import { SkyZone } from './world/SkyZone.js';
+import { DesertZone } from './world/DesertZone.js';
+import { CanyonZone } from './world/CanyonZone.js';
 import { AudioManager } from './systems/AudioManager.js';
 
 async function main() {
@@ -56,6 +58,8 @@ async function main() {
   zoneManager.register('river', RiverZone);
   zoneManager.register('forest', ForestZone);
   zoneManager.register('sky', SkyZone);
+  zoneManager.register('desert', DesertZone);
+  zoneManager.register('canyon', CanyonZone);
 
   // Initial Zone
   await zoneManager.switchTo('tundra');
@@ -68,6 +72,8 @@ async function main() {
       case '3': zoneManager.switchTo('river'); break;
       case '4': zoneManager.switchTo('forest'); break;
       case '5': zoneManager.switchTo('sky'); break;
+      case '6': zoneManager.switchTo('desert'); break;
+      case '7': zoneManager.switchTo('canyon'); break;
     }
   });
 

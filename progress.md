@@ -67,6 +67,12 @@
     - [x] Implemented Zone Labels with fade in/out animations.
     - [x] Refined mobile input sensitivity and mechanics.
     - [x] Tuned walking speed.
+- [x] Vast World Expansion (Ultrathink)
+    - [x] Scaled all zone terrains from 200x200 to 2000x2000 for vast exploration.
+    - [x] Updated camera far plane to 3000 and reduced fog density for long-distance visibility.
+    - [x] Implemented camera-following light system for optimized shadows in large worlds.
+    - [x] Scaled procedural generation (noise, vegetation) to match new terrain dimensions.
+    - [x] Optimized object distribution using Poisson Disk Sampling over larger areas.
 
 ## In Progress
 

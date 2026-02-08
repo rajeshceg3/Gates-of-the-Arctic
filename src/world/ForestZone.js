@@ -13,11 +13,11 @@ class ForestZone extends Zone {
     if (scene) {
         scene.background = new THREE.Color(0x223344);
         // Fog color matches horizon for seamless blend
-        scene.fog = new THREE.FogExp2(0x445566, 0.015);
+        scene.fog = new THREE.FogExp2(0x445566, 0.0025);
     }
 
     // Sky
-    const skyGeo = new THREE.SphereGeometry(400, 32, 32);
+    const skyGeo = new THREE.SphereGeometry(3000, 32, 32);
     const skyMat = new THREE.MeshBasicMaterial({
         vertexColors: true,
         side: THREE.BackSide,
@@ -35,8 +35,8 @@ class ForestZone extends Zone {
 
     for(let i=0; i<count; i++) {
         const y = pos.getY(i);
-        // y ranges from -400 to 400.
-        const t = (y + 400) / 800;
+        // y ranges from -3000 to 3000.
+        const t = (y + 3000) / 6000;
 
         if (t > 0.5) {
             // Horizon (0.5) to Zenith (1.0)
@@ -68,10 +68,21 @@ class ForestZone extends Zone {
     dirLight.shadow.bias = -0.0005;
     dirLight.shadow.mapSize.width = 2048;
     dirLight.shadow.mapSize.height = 2048;
+
+    const d = 150;
+    dirLight.shadow.camera.left = -d;
+    dirLight.shadow.camera.right = d;
+    dirLight.shadow.camera.top = d;
+    dirLight.shadow.camera.bottom = -d;
+    dirLight.shadow.camera.far = 3500;
+
     this.add(dirLight);
+    this.dirLight = dirLight;
+    this.add(dirLight.target);
 
     // Terrain
-    const geometry = new THREE.PlaneGeometry(200, 200, 256, 256);
+    const size = 2000;
+    const geometry = new THREE.PlaneGeometry(size, size, 512, 512);
 
     // Vertex Colors
     const vCount = geometry.attributes.position.count;
@@ -89,8 +100,8 @@ class ForestZone extends Zone {
         const y = positions.getY(i); // Y in local is Z in world
 
         // Rolling hills with noise
-        let height = noise(x * 0.03, y * 0.03) * 3;
-        height += noise(x * 0.1, y * 0.1) * 0.5;
+        let height = noise(x * 0.03, y * 0.03) * 6; // Taller hills for vastness
+        height += noise(x * 0.1, y * 0.1) * 1.5;
 
         positions.setZ(i, height);
 
@@ -135,7 +146,9 @@ class ForestZone extends Zone {
     });
 
     // Poisson Sampling for trees
-    const pds = new PoissonDiskSampling(180, 180, 6, 30); // Spacing 6
+    const sampleSize = 1900;
+    const offset = sampleSize / 2;
+    const pds = new PoissonDiskSampling(sampleSize, sampleSize, 15, 30); // Spacing 15 (less dense but large area)
     const points = pds.fill();
 
     // Group points by type
@@ -163,12 +176,12 @@ class ForestZone extends Zone {
         leafMesh.receiveShadow = true;
 
         typePoints.forEach((p, i) => {
-             const x = p.x - 90;
-             const z = p.y - 90;
+             const x = p.x - offset;
+             const z = p.y - offset;
 
              // Get height
-             let y = noise(x * 0.03, z * 0.03) * 3;
-             y += noise(x * 0.1, z * 0.1) * 0.5;
+             let y = noise(x * 0.03, z * 0.03) * 6;
+             y += noise(x * 0.1, z * 0.1) * 1.5;
 
              dummy.position.set(x, y, z); // Tree base at ground
 
@@ -189,7 +202,7 @@ class ForestZone extends Zone {
     }
 
     // Small rocks/debris (Recycled logic)
-    const pdsRocks = new PoissonDiskSampling(180, 180, 2, 10);
+    const pdsRocks = new PoissonDiskSampling(sampleSize, sampleSize, 10, 10);
     const rockPoints = pdsRocks.fill();
     let rockGeo = new THREE.DodecahedronGeometry(0.2);
     rockGeo = distortGeometry(rockGeo, 10, 0.1);
@@ -199,10 +212,10 @@ class ForestZone extends Zone {
     rocks.castShadow = true;
 
     rockPoints.forEach((p, i) => {
-         const x = p.x - 90;
-         const z = p.y - 90;
-         let y = noise(x * 0.03, z * 0.03) * 3;
-         y += noise(x * 0.1, z * 0.1) * 0.5;
+         const x = p.x - offset;
+         const z = p.y - offset;
+         let y = noise(x * 0.03, z * 0.03) * 6;
+         y += noise(x * 0.1, z * 0.1) * 1.5;
 
          dummy.position.set(x, y, z);
          dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
@@ -316,6 +329,17 @@ class ForestZone extends Zone {
         wood: mergeGeometries(woodGeos),
         leaves: mergeGeometries(leafGeos)
      };
+  }
+
+  tick(delta, camera) {
+      if (camera && this.dirLight) {
+          const x = camera.position.x;
+          const z = camera.position.z;
+
+          this.dirLight.position.set(x - 50, 30, z - 50);
+          this.dirLight.target.position.set(x, 0, z);
+          this.dirLight.target.updateMatrixWorld();
+      }
   }
 }
 

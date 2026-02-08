@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { noise } from '../utils/Noise.js';
 import { distortGeometry } from '../utils/GeometryUtils.js';
 import { PoissonDiskSampling } from '../utils/PoissonDiskSampling.js';
+import { TerrainHelper } from '../utils/TerrainHelper.js';
 
 class CanyonZone extends Zone {
   async load(scene) {
@@ -62,26 +63,9 @@ class CanyonZone extends Zone {
     this.dirLight = dirLight;
     this.add(dirLight.target);
 
-    // Terrain
-    const size = 5000;
-    const geometry = new THREE.PlaneGeometry(size, size, 1024, 1024);
-    const count = geometry.attributes.position.count;
-
-    geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
-
-    const positions = geometry.attributes.position;
-    const colors = geometry.attributes.color;
-
-    const colorTop = new THREE.Color(0xb06040); // Terracotta
-    const colorBand = new THREE.Color(0x904030); // Darker red
-    const colorBottom = new THREE.Color(0x703020);
-
-    for (let i = 0; i < count; i++) {
-       const x = positions.getX(i);
-       const y = positions.getY(i);
-
+    // Functions
+    const heightFn = (x, y) => {
        // Canyon logic
-       // Ridged noise
        let n = noise(x * 0.001, y * 0.001);
        let riverPath = Math.abs(n); // 0 at "river", 1 at peaks
 
@@ -106,23 +90,33 @@ class CanyonZone extends Zone {
 
        // Detail
        h += noise(x * 0.05, y * 0.05) * 2.0;
+       return h;
+    };
 
-       positions.setZ(i, h);
+    const colorTop = new THREE.Color(0xb06040); // Terracotta
+    const colorBand = new THREE.Color(0x904030); // Darker red
+    const colorBottom = new THREE.Color(0x703020);
 
+    const colorFn = (x, y, h, slope) => {
        // Colors based on height (strata)
        let strata = h + noise(x * 0.05, y * 0.05) * 10.0;
        let band = Math.sin(strata * 0.1); // banding frequency
 
        if (h < -10) {
-           tempColor.copy(colorBottom).lerp(colorBand, Math.max(0, band));
+           return tempColor.copy(colorBottom).lerp(colorBand, Math.max(0, band));
        } else {
            tempColor.copy(colorTop);
            if (band > 0.5) tempColor.lerp(colorBand, 0.5);
+           return tempColor;
        }
+    };
 
-       colors.setXYZ(i, tempColor.r, tempColor.g, tempColor.b);
-    }
-    geometry.computeVertexNormals();
+    const size = 5000;
+    const segments = 1024;
+    const { geometry, heightData } = TerrainHelper.generate(size, segments, heightFn, colorFn);
+    this.heightData = heightData;
+    this.terrainSize = size;
+    this.terrainSegments = segments;
 
     const material = new THREE.MeshStandardMaterial({
         vertexColors: true,
@@ -130,8 +124,6 @@ class CanyonZone extends Zone {
         flatShading: false, // Smooth shading for organic feel, though canyons are sharp
         side: THREE.DoubleSide
     });
-    // For canyon, flat shading might look better on low poly, but we have high poly now.
-    // Let's stick to smooth.
 
     const terrain = new THREE.Mesh(geometry, material);
     terrain.rotation.x = -Math.PI / 2;
@@ -147,41 +139,38 @@ class CanyonZone extends Zone {
 
     let rockGeo = new THREE.IcosahedronGeometry(1.5, 0);
     rockGeo = distortGeometry(rockGeo, 2, 0.3);
-    const rockMat = new THREE.MeshStandardMaterial({ color: 0x804030, roughness: 0.9 });
+    const rockMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9 });
     const rocks = new THREE.InstancedMesh(rockGeo, rockMat, points.length);
     rocks.castShadow = true; rocks.receiveShadow = true;
 
     const dummy = new THREE.Object3D();
     let rCount = 0;
+    const instColor = new THREE.Color();
+    const rockBase = new THREE.Color(0x804030);
 
     points.forEach((p) => {
         const x = p.x - offset;
         const z = p.y - offset;
 
-        // Recompute h roughly
+        // Recompute filter
         let n = noise(x * 0.001, z * 0.001);
         let riverPath = Math.abs(n);
 
         // Place rocks mostly in riverbed or top
         if (riverPath < 0.15 || riverPath > 0.8) {
-             let h = 0;
-             // Simplified height calc for placement
-             if (riverPath < 0.1) h = -20 + riverPath * 50;
-             else {
-                 let t = (riverPath - 0.1) / 0.9;
-                 let steps = 5;
-                 let stepped = Math.floor(t * steps) / steps;
-                 stepped += (t - stepped) * 0.2;
-                 h = -15 + stepped * 300;
-             }
-             h += noise(x*0.05, z*0.05)*2.0;
+             const h = TerrainHelper.getHeightAt(x, z, this.heightData, this.terrainSize, this.terrainSegments);
 
              dummy.position.set(x, h + 1, z);
              dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
              const s = 1 + Math.random() * 2;
              dummy.scale.set(s,s,s);
              dummy.updateMatrix();
-             rocks.setMatrixAt(rCount++, dummy.matrix);
+             rocks.setMatrixAt(rCount, dummy.matrix);
+
+             instColor.copy(rockBase).multiplyScalar(0.8 + Math.random() * 0.4);
+             rocks.setColorAt(rCount, instColor);
+
+             rCount++;
         }
     });
     rocks.count = rCount;

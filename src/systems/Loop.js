@@ -10,10 +10,18 @@ class Loop {
     this.updatables = [];
   }
 
+  setRenderCallback(callback) {
+    this.renderCallback = callback;
+  }
+
   start() {
     this.renderer.setAnimationLoop(() => {
       this.tick();
-      this.renderer.render(this.scene, this.camera);
+      if (this.renderCallback) {
+        this.renderCallback();
+      } else {
+        this.renderer.render(this.scene, this.camera);
+      }
     });
   }
 

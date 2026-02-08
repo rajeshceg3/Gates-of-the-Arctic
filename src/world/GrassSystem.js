@@ -83,16 +83,28 @@ export class GrassSystem {
 
         float h = position.y; // 0 at bottom, ~1 at top (assuming height 1)
 
-        // Sway logic
-        // Use sine waves offset by world position
-        float swayX = sin(time * 1.0 + worldX * 0.05) * 0.1;
-        float swayZ = cos(time * 0.8 + worldZ * 0.05) * 0.1;
+        // Organic Wind Sway
+        float t = time;
 
-        // Add gusts
-        swayX += sin(time * 2.5 + worldX * 0.2) * 0.05;
+        // Combine multiple sine waves for more natural movement
+        // Low frequency base swell
+        float swell = sin(t * 0.5 + worldX * 0.02 + worldZ * 0.01);
 
-        transformed.x += swayX * h; // Apply only to top
-        transformed.z += swayZ * h;
+        // Higher frequency ripple
+        float ripple = sin(t * 1.5 + worldX * 0.1 - worldZ * 0.05);
+
+        // "Gust" effect using low freq interference
+        float gust = sin(t * 0.2 + worldX * 0.005) + sin(t * 0.3 + worldZ * 0.005);
+        float windStrength = smoothstep(0.0, 1.5, gust) * 0.3 + 0.1; // 0.1 base, up to 0.4
+
+        float swayX = (swell + ripple * 0.5) * windStrength;
+        float swayZ = (cos(t * 0.4 + worldZ * 0.02) + ripple * 0.5) * windStrength;
+
+        // Apply quadratic height factor for bending (stiffer at bottom)
+        float bend = h * h;
+
+        transformed.x += swayX * bend;
+        transformed.z += swayZ * bend;
         `
       );
     };

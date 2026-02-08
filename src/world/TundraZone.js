@@ -4,6 +4,7 @@ import { noise } from '../utils/Noise.js';
 import { distortGeometry } from '../utils/GeometryUtils.js';
 import { PoissonDiskSampling } from '../utils/PoissonDiskSampling.js';
 import { TerrainHelper } from '../utils/TerrainHelper.js';
+import { GrassSystem } from './GrassSystem.js';
 
 class TundraZone extends Zone {
   async load(scene) {
@@ -16,12 +17,13 @@ class TundraZone extends Zone {
     }
 
     // Lighting
+    // Warmer, lower sun for "Gates of the Arctic" golden hour feel
     const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
     hemiLight.position.set(0, 20, 0);
     this.add(hemiLight);
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    dirLight.position.set(-50, 50, -50); // Low sun angle
+    const dirLight = new THREE.DirectionalLight(0xffccaa, 1.0); // Warmer light
+    dirLight.position.set(-50, 15, -50); // Much lower sun angle (15 degrees)
     dirLight.castShadow = true;
     dirLight.shadow.bias = -0.0005;
     dirLight.shadow.mapSize.width = 2048;
@@ -54,6 +56,31 @@ class TundraZone extends Zone {
        z += noise(x * 2.0, y * 2.0) * 0.05; // Extra detail
        return z;
     };
+
+    // Placement Function for Grass
+    const placementFn = (x, z, h) => {
+        // Place grass where height is low (tundra plains)
+        // Avoid water level (h < 0) and high peaks (h > 1.5)
+        // Add noise to make it patchy
+
+        let n = noise(x * 0.2, z * 0.2); // Same scale as colorFn
+        let detail = noise(x * 1.0, z * 1.0) * 0.2;
+
+        let heightFactor = h + n * 0.5 + detail;
+
+        // Matches the "Green" area of colorFn roughly
+        if (h > -0.5 && heightFactor < 1.6) {
+            // Further reduce density based on noise to create patches
+            // Only place if noise is > 0
+            return (n + detail) > -0.2;
+        }
+        return false;
+    };
+
+    // Initialize Grass System
+    this.grassSystem = new GrassSystem(this, size, segments, heightFn, placementFn);
+    this.grassSystem.generate();
+
 
     // Color Function
     const colorRock = new THREE.Color(0x555555);
@@ -184,11 +211,15 @@ class TundraZone extends Zone {
   }
 
   tick(delta, camera) {
+      if (this.grassSystem) {
+          this.grassSystem.tick(delta);
+      }
+
       if (camera && this.dirLight) {
           const x = camera.position.x;
           const z = camera.position.z;
 
-          this.dirLight.position.set(x - 50, 50, z - 50);
+          this.dirLight.position.set(x - 50, 15, z - 50); // Keep low angle
           this.dirLight.target.position.set(x, 0, z);
           this.dirLight.target.updateMatrixWorld();
       }

@@ -47,14 +47,21 @@ class WindSystem {
     const gainNode = this.context.createGain();
     gainNode.gain.value = 0; // Start silent, ramp up
 
+    // Spatial Panning for immersion
+    const panner = this.context.createStereoPanner();
+    panner.pan.value = (Math.random() * 2 - 1) * 0.5; // Initial random pan
+
     source.connect(filter);
     filter.connect(gainNode);
-    gainNode.connect(this.audioManager.reverbNode || this.audioManager.masterGain);
+    gainNode.connect(panner);
+    panner.connect(this.audioManager.reverbNode || this.audioManager.masterGain);
 
     source.start(0);
-    this.nodes.push({ source, filter, gainNode, baseFreq: filterFreq, baseGain: initialGain });
 
-    return { source, filter, gainNode, baseFreq: filterFreq, baseGain: initialGain };
+    const nodeObj = { source, filter, gainNode, panner, baseFreq: filterFreq, baseGain: initialGain, panPhase: Math.random() * 100 };
+    this.nodes.push(nodeObj);
+
+    return nodeObj;
   }
 
   setZone(name) {
@@ -140,6 +147,10 @@ class WindSystem {
     // Modulate filter frequency slightly for movement
     const freqMod = Math.sin(this.time * 0.5 * sensitivity) * 50;
     layer.filter.frequency.setTargetAtTime(layer.baseFreq + freqMod, this.context.currentTime, 0.5);
+
+    // Modulate Pan (slow movement around listener)
+    const pan = Math.sin(this.time * 0.1 + layer.panPhase) * 0.6;
+    layer.panner.pan.setTargetAtTime(pan, this.context.currentTime, 0.1);
   }
 
   stop() {
@@ -147,6 +158,7 @@ class WindSystem {
         n.source.stop();
         n.source.disconnect();
         n.gainNode.disconnect();
+        if (n.panner) n.panner.disconnect();
     });
     this.nodes = [];
   }

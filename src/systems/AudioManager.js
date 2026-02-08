@@ -1,5 +1,11 @@
+import { Vector3 } from 'three';
+import { FootstepSystem } from '../audio/FootstepSystem.js';
+import { WindSystem } from '../audio/WindSystem.js';
+import { MusicSystem } from '../audio/MusicSystem.js';
+
 class AudioManager {
-  constructor() {
+  constructor(camera) {
+    this.camera = camera;
     this.context = null;
     this.masterGain = null;
     this.reverbNode = null;
@@ -7,6 +13,15 @@ class AudioManager {
     this.currentTheme = null;
     this.activeNodes = []; // Track active oscillators/nodes to stop them
     this.activeIntervals = []; // Track intervals for random events
+
+    // Subsystems
+    this.footstepSystem = null;
+    this.windSystem = null;
+    this.musicSystem = null;
+
+    // Movement tracking
+    this.lastPosition = new Vector3();
+    this.currentSpeed = 0;
   }
 
   async init() {
@@ -22,10 +37,14 @@ class AudioManager {
 
     // Reverb
     this.reverbNode = this.context.createConvolver();
-    // Generate a default impulse response (can be overridden per theme if needed, but keeping simple for now)
     const impulse = this._createImpulseResponse(2.5, 2.0);
     this.reverbNode.buffer = impulse;
     this.reverbNode.connect(this.masterGain);
+
+    // Initialize Subsystems
+    this.footstepSystem = new FootstepSystem(this);
+    this.windSystem = new WindSystem(this);
+    this.musicSystem = new MusicSystem(this);
 
     this.isInitialized = true;
 
@@ -40,6 +59,22 @@ class AudioManager {
     }
   }
 
+  tick(delta) {
+    if (!this.isInitialized) return;
+
+    // Calculate speed
+    if (this.camera) {
+        const distance = this.camera.position.distanceTo(this.lastPosition);
+        this.currentSpeed = distance / delta;
+        this.lastPosition.copy(this.camera.position);
+    }
+
+    // Update Systems
+    if (this.footstepSystem) this.footstepSystem.tick(delta, this.currentSpeed, this.currentTheme);
+    if (this.windSystem) this.windSystem.tick(delta);
+    if (this.musicSystem) this.musicSystem.tick(delta);
+  }
+
   _createImpulseResponse(duration, decay) {
     const rate = this.context.sampleRate;
     const length = rate * duration;
@@ -48,7 +83,6 @@ class AudioManager {
     const right = impulse.getChannelData(1);
 
     for (let i = 0; i < length; i++) {
-        // Exponential decay noise
         const n = i / length;
         const noise = (Math.random() * 2 - 1) * Math.pow(1 - n, decay);
         left[i] = noise;
@@ -69,62 +103,28 @@ class AudioManager {
     this._stopCurrentTheme();
     this.currentTheme = name;
 
-    // Cross-fade could be implemented here, but hard stop is safer for now to avoid leak
-    // "Ultrathink": We need immersive soundscapes.
+    // Update Subsystems
+    this.windSystem.setZone(name);
+    this.musicSystem.setZone(name);
 
+    // Legacy/Extra Ambience layers (Water, Birds)
     switch (name) {
-      case 'tundra':
-        // Cold, howling wind. Deep and isolating.
-        this._playWind({ type: 'pink', filterFreq: 250, q: 1, gain: 0.4 });
-        this._playWind({ type: 'pink', filterFreq: 400, q: 5, gain: 0.1, modulate: true }); // Whistling
-        break;
-
       case 'mountain':
-        // Strong, buffeting wind. Echoey.
-        this._playWind({ type: 'pink', filterFreq: 300, q: 2, gain: 0.5, modulate: true });
-        // Occasional eagle/bird
         this._startRandomEvent(() => this._playBird('eagle'), 8000, 20000);
         break;
 
       case 'river':
-        // Rushing water.
         this._playWater({ gain: 0.6 });
-        // Gentle breeze
-        this._playWind({ type: 'pink', filterFreq: 600, q: 0.5, gain: 0.2 });
         this._startRandomEvent(() => this._playBird('chirp'), 3000, 10000);
         break;
 
       case 'forest':
-        // Rustling leaves (High pass noise)
-        this._playWind({ type: 'pink', filterFreq: 1200, q: 0.5, gain: 0.15 }); // Leaves
-        this._playWind({ type: 'brown', filterFreq: 150, q: 0, gain: 0.2 }); // Background rumble
-        // Active wildlife
         this._startRandomEvent(() => this._playBird('chirp'), 2000, 8000);
         this._startRandomEvent(() => this._playBird('trill'), 5000, 15000);
         break;
 
-      case 'sky':
-        // Ethereal drone.
-        this._playDrone(220, 'sine', 0.15); // A3
-        this._playDrone(330, 'sine', 0.1);  // E4
-        this._playWind({ type: 'white', filterFreq: 800, q: 1, gain: 0.05, modulate: true }); // High altitude air
-        break;
-
-      case 'desert':
-        // Dry, hissing wind.
-        this._playWind({ type: 'white', filterFreq: 600, q: 0.5, gain: 0.15 });
-        this._playDrone(60, 'triangle', 0.05); // Low heat shimmer drone
-        break;
-
       case 'canyon':
-        // Resonant wind through rocks.
-        this._playWind({ type: 'pink', filterFreq: 300, q: 8, gain: 0.3, modulate: true }); // Resonant
-        this._playWind({ type: 'brown', filterFreq: 100, q: 0, gain: 0.4 }); // Base
-        break;
-
-      default:
-        // Fallback
-        this._playWind({ type: 'pink', filterFreq: 300, q: 1, gain: 0.2 });
+        // No extra birds needed, music/wind handle it
         break;
     }
   }
@@ -132,11 +132,9 @@ class AudioManager {
   _stopCurrentTheme() {
     this.activeNodes.forEach(item => {
         try {
-            // Stop oscillators/sources
             if (item.source) {
-                item.source.stop(this.context.currentTime + 0.1); // Slight fade out
+                item.source.stop(this.context.currentTime + 0.1);
             }
-            // Disconnect nodes to free graph
             setTimeout(() => {
                 if (item.source) item.source.disconnect();
                 if (item.nodes) item.nodes.forEach(n => n.disconnect());
@@ -147,6 +145,9 @@ class AudioManager {
 
     this.activeIntervals.forEach(id => clearTimeout(id));
     this.activeIntervals = [];
+
+    if (this.windSystem) this.windSystem.stop();
+    if (this.musicSystem) this.musicSystem.stop();
   }
 
   _startRandomEvent(callback, minTime, maxTime) {
@@ -161,8 +162,7 @@ class AudioManager {
     scheduleNext();
   }
 
-  // --- Generators ---
-
+  // Helper to create basic noise buffer (used by Water)
   _createBuffer(type) {
     const bufferSize = 2 * this.context.sampleRate;
     const buffer = this.context.createBuffer(1, bufferSize, this.context.sampleRate);
@@ -175,61 +175,20 @@ class AudioManager {
              const b0 = 0.99886 * lastOut + white * 0.0555179;
              data[i] = b0;
              lastOut = b0;
-             data[i] *= 3.5; // Compensate gain
+             data[i] *= 3.5;
         } else if (type === 'brown') {
              const b0 = (lastOut + (0.02 * white)) / 1.02;
              data[i] = b0;
              lastOut = b0;
              data[i] *= 3.5;
         } else {
-             data[i] = white; // White
+             data[i] = white;
         }
     }
     return buffer;
   }
 
-  _playWind({ type = 'pink', filterFreq = 400, q = 1, gain = 0.1, modulate = false }) {
-    const buffer = this._createBuffer(type);
-    const source = this.context.createBufferSource();
-    source.buffer = buffer;
-    source.loop = true;
-
-    const filter = this.context.createBiquadFilter();
-    filter.type = 'lowpass';
-    if (q > 2) filter.type = 'bandpass'; // High Q usually means we want a tone
-    filter.frequency.value = filterFreq;
-    filter.Q.value = q;
-
-    const gainNode = this.context.createGain();
-    gainNode.gain.value = gain;
-
-    // Connect: Source -> Filter -> Gain -> Reverb -> Master
-    source.connect(filter);
-    filter.connect(gainNode);
-    gainNode.connect(this.reverbNode); // Wind gets reverb for space
-
-    source.start(0);
-
-    const nodes = [filter, gainNode];
-    this.activeNodes.push({ source, nodes });
-
-    if (modulate) {
-      this._modulateFilter(filter, filterFreq);
-    }
-  }
-
-  _modulateFilter(filter, baseFreq) {
-    const interval = setInterval(() => {
-       if (this.context.state !== 'running') return;
-       const randomOffset = (Math.random() - 0.5) * baseFreq * 0.5;
-       const target = baseFreq + randomOffset;
-       filter.frequency.exponentialRampToValueAtTime(target, this.context.currentTime + 3);
-    }, 4000);
-    this.activeIntervals.push(interval);
-  }
-
   _playWater({ gain = 0.5 }) {
-    // Water is essentially brown noise
     const buffer = this._createBuffer('brown');
     const source = this.context.createBufferSource();
     source.buffer = buffer;
@@ -244,37 +203,10 @@ class AudioManager {
 
     source.connect(filter);
     filter.connect(gainNode);
-    gainNode.connect(this.masterGain); // Direct to master, less reverb for water generally unless in cave
+    gainNode.connect(this.masterGain);
 
     source.start(0);
     this.activeNodes.push({ source, nodes: [filter, gainNode] });
-  }
-
-  _playDrone(freq, type = 'sine', gain = 0.1) {
-    const osc = this.context.createOscillator();
-    osc.type = type;
-    osc.frequency.value = freq;
-
-    const gainNode = this.context.createGain();
-    gainNode.gain.value = gain;
-
-    // LFO for subtle movement
-    const lfo = this.context.createOscillator();
-    lfo.frequency.value = 0.1; // Slow
-    const lfoGain = this.context.createGain();
-    lfoGain.gain.value = 2.0; // +/- 2Hz detune
-
-    lfo.connect(lfoGain);
-    lfoGain.connect(osc.frequency);
-    lfo.start();
-
-    osc.connect(gainNode);
-    gainNode.connect(this.reverbNode); // Drones love reverb
-
-    osc.start();
-    this.activeNodes.push({ source: osc, nodes: [gainNode, lfo, lfoGain] });
-    // Note: stopping osc stops lfo implicitly? No, need to track.
-    // Fixed in _stopCurrentTheme to generic stop
   }
 
   _playBird(type) {

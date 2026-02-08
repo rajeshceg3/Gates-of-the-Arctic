@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { noise } from '../utils/Noise.js';
 import { distortGeometry } from '../utils/GeometryUtils.js';
 import { PoissonDiskSampling } from '../utils/PoissonDiskSampling.js';
+import { TerrainHelper } from '../utils/TerrainHelper.js';
 
 class TundraZone extends Zone {
   async load(scene) {
@@ -42,55 +43,48 @@ class TundraZone extends Zone {
 
     // Terrain
     const size = 5000;
-    const geometry = new THREE.PlaneGeometry(size, size, 1024, 1024); // Increased resolution and size
-    const count = geometry.attributes.position.count;
+    const segments = 1024; // Increased resolution and size
 
-    // Create color attribute
-    geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
+    // Height Function
+    const heightFn = (x, y) => {
+       // Perlin noise for height (y is world Z)
+       let z = noise(x * 0.05, y * 0.05) * 2;
+       z += noise(x * 0.1, y * 0.1) * 0.5;
+       z += noise(x * 0.5, y * 0.5) * 0.1;
+       z += noise(x * 2.0, y * 2.0) * 0.05; // Extra detail
+       return z;
+    };
 
-    const positions = geometry.attributes.position;
-    const colors = geometry.attributes.color;
-
+    // Color Function
     const colorRock = new THREE.Color(0x555555);
     const colorGrass = new THREE.Color(0x5da130);
     const colorSnow = new THREE.Color(0xffffff);
     const tempColor = new THREE.Color();
 
-    for (let i = 0; i < count; i++) {
-       const x = positions.getX(i);
-       const y = positions.getY(i); // Local Y is world Z before rotation
-
-       // Perlin noise for height
-       // Multiple octaves
-       let z = noise(x * 0.05, y * 0.05) * 2;
-       z += noise(x * 0.1, y * 0.1) * 0.5;
-       z += noise(x * 0.5, y * 0.5) * 0.1;
-       z += noise(x * 2.0, y * 2.0) * 0.05; // Extra detail
-
-       positions.setZ(i, z);
-
-       // Coloring
-       // Mix based on height and noise
+    const colorFn = (x, y, h, slope) => {
+       // Coloring based on height and noise
        let n = noise(x * 0.2, y * 0.2);
        let detail = noise(x * 1.0, y * 1.0) * 0.2; // High freq detail
 
-       let heightFactor = z + n * 0.5 + detail;
+       let heightFactor = h + n * 0.5 + detail;
 
        if (heightFactor > 2.2) {
-           tempColor.copy(colorSnow);
+           return colorSnow;
        } else if (heightFactor > 1.5) {
            let t = (heightFactor - 1.5) / 0.7;
            t = Math.max(0, Math.min(1, t));
-           tempColor.copy(colorRock).lerp(colorSnow, t);
+           return tempColor.copy(colorRock).lerp(colorSnow, t);
        } else {
            let t = Math.max(0, n + detail + 0.5); // Mix rock and grass based on noise
            t = Math.max(0, Math.min(1, t));
-           tempColor.copy(colorGrass).lerp(colorRock, t);
+           return tempColor.copy(colorGrass).lerp(colorRock, t);
        }
+    };
 
-       colors.setXYZ(i, tempColor.r, tempColor.g, tempColor.b);
-    }
-    geometry.computeVertexNormals();
+    const { geometry, heightData } = TerrainHelper.generate(size, segments, heightFn, colorFn);
+    this.heightData = heightData;
+    this.terrainSize = size;
+    this.terrainSegments = segments;
 
     const material = new THREE.MeshStandardMaterial({
         vertexColors: true,
@@ -109,7 +103,8 @@ class TundraZone extends Zone {
     let rockGeo = new THREE.IcosahedronGeometry(0.8, 0);
     rockGeo = distortGeometry(rockGeo, 2, 0.3);
 
-    const rockMat = new THREE.MeshStandardMaterial({ color: 0x666666, flatShading: false, roughness: 0.8 });
+    // Use white material so we can tint via instance colors
+    const rockMat = new THREE.MeshStandardMaterial({ color: 0xffffff, flatShading: false, roughness: 0.8 });
 
     // Poisson Sampling
     const sampleSize = 4900;
@@ -121,39 +116,47 @@ class TundraZone extends Zone {
     rocks.castShadow = true;
     rocks.receiveShadow = true;
 
+    const baseRockColor = new THREE.Color(0x666666);
+    const rockVarColor = new THREE.Color(0x888888);
+
     // Pebbles (Small rocks)
     const pdsPebbles = new PoissonDiskSampling(sampleSize, sampleSize, 15, 15);
     const pebblePoints = pdsPebbles.fill();
     let pebbleGeo = new THREE.IcosahedronGeometry(0.15, 0);
     pebbleGeo = distortGeometry(pebbleGeo, 5, 0.05);
-    const pebbleMat = new THREE.MeshStandardMaterial({ color: 0x444444, flatShading: false, roughness: 0.9 });
+    const pebbleMat = new THREE.MeshStandardMaterial({ color: 0xffffff, flatShading: false, roughness: 0.9 });
     const pebbles = new THREE.InstancedMesh(pebbleGeo, pebbleMat, pebblePoints.length);
     pebbles.receiveShadow = true;
     pebbles.castShadow = true;
 
+    const basePebbleColor = new THREE.Color(0x444444);
+
 
     const dummy = new THREE.Object3D();
+    const instColor = new THREE.Color();
 
     // Setup Rocks
     points.forEach((p, i) => {
         const x = p.x - offset;
         const z = p.y - offset;
 
-        let yHeight = noise(x * 0.05, z * 0.05) * 2;
-        yHeight += noise(x * 0.1, z * 0.1) * 0.5;
-        yHeight += noise(x * 0.5, z * 0.5) * 0.1;
-        yHeight += noise(x * 2.0, z * 2.0) * 0.05;
+        // Use precise height from helper
+        const yHeight = TerrainHelper.getHeightAt(x, z, this.heightData, this.terrainSize, this.terrainSegments);
 
         dummy.position.set(x, yHeight, z);
         dummy.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
 
         const scale = 0.5 + Math.random() * 1.5;
         dummy.scale.set(scale, scale, scale);
-
-        dummy.position.y += scale * 0.4;
+        // Slightly sink
+        dummy.position.y -= 0.1 * scale;
 
         dummy.updateMatrix();
         rocks.setMatrixAt(i, dummy.matrix);
+
+        // Color variation
+        instColor.copy(baseRockColor).lerp(rockVarColor, Math.random() * 0.5).multiplyScalar(0.8 + Math.random() * 0.4);
+        rocks.setColorAt(i, instColor);
     });
 
     // Setup Pebbles
@@ -161,10 +164,7 @@ class TundraZone extends Zone {
         const x = p.x - offset;
         const z = p.y - offset;
 
-        let yHeight = noise(x * 0.05, z * 0.05) * 2;
-        yHeight += noise(x * 0.1, z * 0.1) * 0.5;
-        yHeight += noise(x * 0.5, z * 0.5) * 0.1;
-        yHeight += noise(x * 2.0, z * 2.0) * 0.05;
+        const yHeight = TerrainHelper.getHeightAt(x, z, this.heightData, this.terrainSize, this.terrainSegments);
 
         dummy.position.set(x, yHeight + 0.05, z); // Slightly above ground
         dummy.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
@@ -174,6 +174,9 @@ class TundraZone extends Zone {
 
         dummy.updateMatrix();
         pebbles.setMatrixAt(i, dummy.matrix);
+
+        instColor.copy(basePebbleColor).multiplyScalar(0.8 + Math.random() * 0.4);
+        pebbles.setColorAt(i, instColor);
     });
 
     this.add(rocks);

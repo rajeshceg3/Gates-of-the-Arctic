@@ -1,6 +1,7 @@
 import { Zone } from './Zone.js';
 import * as THREE from 'three';
 import { noise } from '../utils/Noise.js';
+import { TerrainHelper } from '../utils/TerrainHelper.js';
 
 class MountainZone extends Zone {
   async load(scene) {
@@ -35,29 +36,11 @@ class MountainZone extends Zone {
     this.dirLight = dirLight;
     this.add(dirLight.target);
 
-    // Terrain
-    const size = 5000;
-    const geometry = new THREE.PlaneGeometry(size, size, 1024, 1024);
-    const count = geometry.attributes.position.count;
-
-    geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
-
-    const positions = geometry.attributes.position;
-    const colors = geometry.attributes.color;
-
-    const colorRock = new THREE.Color(0x444455);
-    const colorSnow = new THREE.Color(0xffffff);
-    const colorLow = new THREE.Color(0x556655); // Greenish grey at bottom
-    const tempColor = new THREE.Color();
-
-    for (let i = 0; i < positions.count; i++) {
-        const x = positions.getX(i);
-        const y = positions.getY(i); // Z in world
-
+    // Functions
+    const heightFn = (x, y) => {
         const distFromCenter = Math.abs(x);
 
         // Ridged noise for sharp peaks
-        // Scale frequency down to match larger size
         let nBase = noise(x * 0.001, y * 0.001); // Reduced freq for larger mountains
         let ridged = 1.0 - Math.abs(nBase);
         ridged = Math.pow(ridged, 3.0); // Sharpen ridges
@@ -72,7 +55,6 @@ class MountainZone extends Zone {
         height += noise(x * 0.2, y * 0.2) * 1.0;
 
         // Valley masking
-        // Wider valley for the larger world
         const valleyWidth = 600.0;
         let valley = Math.min(1.0, distFromCenter / valleyWidth);
         valley = valley * valley * (3 - 2 * valley); // Smoothstep
@@ -89,44 +71,53 @@ class MountainZone extends Zone {
         if (distFromCenter < slopeStart) {
             height += noise(x * 0.05, y * 0.05) * 2.0;
         }
+        return height;
+    };
 
-        positions.setZ(i, height);
+    const colorRock = new THREE.Color(0x444455);
+    const colorSnow = new THREE.Color(0xffffff);
+    const colorLow = new THREE.Color(0x556655); // Greenish grey at bottom
+    const tempColor = new THREE.Color();
 
-        // Colors
+    const colorFn = (x, y, h, slope) => {
         // Snow based on height and noise
         let snowNoise = noise(x * 0.01, y * 0.01) * 20;
         let detailNoise = noise(x * 0.1, y * 0.1);
 
         let snowLine = 150 + snowNoise; // Higher snow line
 
+        // Less snow on steep slopes
+        if (slope > 0.6) snowLine += 50;
+
         // Rock/Grass transition at bottom
         let lowLine = 30 + noise(x * 0.02, y * 0.02) * 10;
 
-        if (height > snowLine) {
+        if (h > snowLine) {
              // Pure snow or mixed
-             let t = (height - snowLine) / 50.0;
+             let t = (h - snowLine) / 50.0;
              t = Math.min(1, t + detailNoise * 0.2);
-             tempColor.copy(colorRock).lerp(colorSnow, t);
-        } else if (height > lowLine) {
+             return tempColor.copy(colorRock).lerp(colorSnow, t);
+        } else if (h > lowLine) {
              // Rock
-             let t = (height - lowLine) / (snowLine - lowLine);
+             let t = (h - lowLine) / (snowLine - lowLine);
              // Mix in some snow patches
-             if (detailNoise > 0.6 && height > 120) {
-                 tempColor.copy(colorRock).lerp(colorSnow, 0.5);
+             if (detailNoise > 0.6 && h > 120) {
+                 return tempColor.copy(colorRock).lerp(colorSnow, 0.5);
              } else {
-                 tempColor.copy(colorLow).lerp(colorRock, t);
+                 return tempColor.copy(colorLow).lerp(colorRock, t);
              }
         } else {
              // Low (grass/moss)
-             tempColor.copy(colorLow);
-             // Variation
-             tempColor.multiplyScalar(0.9 + detailNoise * 0.2);
+             return tempColor.copy(colorLow).multiplyScalar(0.9 + detailNoise * 0.2);
         }
+    };
 
-        colors.setXYZ(i, tempColor.r, tempColor.g, tempColor.b);
-    }
-
-    geometry.computeVertexNormals();
+    const size = 5000;
+    const segments = 1024;
+    const { geometry, heightData } = TerrainHelper.generate(size, segments, heightFn, colorFn);
+    this.heightData = heightData;
+    this.terrainSize = size;
+    this.terrainSegments = segments;
 
     const material = new THREE.MeshStandardMaterial({
         vertexColors: true,

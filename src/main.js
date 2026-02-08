@@ -32,8 +32,8 @@ async function main() {
   const loop = new Loop(camera, scene, renderer);
   const input = new InputController();
   const rig = new CameraRig(camera, input, scene);
-  const zoneManager = new ZoneManager(scene, camera);
   const audio = new AudioManager();
+  const zoneManager = new ZoneManager(scene, camera, audio);
 
   // Initialize audio and hide UI on first user interaction
   const initInteraction = () => {

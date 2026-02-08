@@ -1,7 +1,8 @@
 class ZoneManager {
-  constructor(scene, camera) {
+  constructor(scene, camera, audioManager) {
     this.scene = scene;
     this.camera = camera;
+    this.audioManager = audioManager;
     this.currentZone = null;
     this.zones = {};
     this.labelTimeout = null;
@@ -33,6 +34,11 @@ class ZoneManager {
       await zone.load(this.scene);
       this.scene.add(zone);
       this.currentZone = zone;
+
+      // Update Audio
+      if (this.audioManager) {
+        this.audioManager.setTheme(name);
+      }
     } else {
       console.error(`Zone ${name} not found.`);
     }

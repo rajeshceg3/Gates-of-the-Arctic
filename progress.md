@@ -73,6 +73,12 @@
     - [x] Implemented camera-following light system for optimized shadows in large worlds.
     - [x] Scaled procedural generation (noise, vegetation) to match new terrain dimensions.
     - [x] Optimized object distribution using Poisson Disk Sampling over larger areas.
+- [x] Naturalism Refinement (Ultrathink)
+    - [x] Refactored `distortGeometry` to use independent noise for X, Y, Z axes, eliminating diagonal bias.
+    - [x] Replaced low-poly `DodecahedronGeometry` with `IcosahedronGeometry` for rocks and vegetation in all zones.
+    - [x] Increased tree trunk and branch segments in `ForestZone` for rounder silhouettes.
+    - [x] Optimized `RiverZone` water plane resolution to 150x150 for performance balance.
+    - [x] Verified frontend rendering with Playwright.
 
 ## In Progress
 

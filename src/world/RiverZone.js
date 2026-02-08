@@ -151,7 +151,7 @@ class RiverZone extends Zone {
 
     // Water Plane
     // Use lower res for CPU animation perf, but cover full area
-    const waterGeo = new THREE.PlaneGeometry(size, size, 256, 256);
+    const waterGeo = new THREE.PlaneGeometry(size, size, 150, 150);
     const waterMat = new THREE.MeshPhysicalMaterial({
         color: 0x55aaff,
         roughness: 0.1,
@@ -183,7 +183,7 @@ class RiverZone extends Zone {
   }
 
   addRocks(points, minScale, maxScale, colorHex, offset) {
-      let geo = new THREE.DodecahedronGeometry(1);
+      let geo = new THREE.IcosahedronGeometry(1, 0);
       geo = distortGeometry(geo, 2, 0.2);
       const mat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.8 });
       const mesh = new THREE.InstancedMesh(geo, mat, points.length);

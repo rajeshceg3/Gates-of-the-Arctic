@@ -11,6 +11,7 @@ import { SkyZone } from './world/SkyZone.js';
 import { DesertZone } from './world/DesertZone.js';
 import { CanyonZone } from './world/CanyonZone.js';
 import { AudioManager } from './systems/AudioManager.js';
+import { PostProcessingManager } from './systems/PostProcessing.js';
 
 async function main() {
   const container = document.querySelector('#app');
@@ -34,6 +35,8 @@ async function main() {
   const rig = new CameraRig(camera, input, scene);
   const audio = new AudioManager(camera);
   const zoneManager = new ZoneManager(scene, camera, audio);
+  const postProcessing = new PostProcessingManager(scene, camera, renderer);
+  loop.setRenderCallback(() => postProcessing.render());
 
   // Initialize audio and hide Landing Screen on button click
   const startBtn = document.getElementById('start-btn');
@@ -99,6 +102,7 @@ async function main() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+    postProcessing.resize(window.innerWidth, window.innerHeight);
   });
 }
 

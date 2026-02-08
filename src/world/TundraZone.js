@@ -5,6 +5,7 @@ import { distortGeometry } from '../utils/GeometryUtils.js';
 import { PoissonDiskSampling } from '../utils/PoissonDiskSampling.js';
 import { TerrainHelper } from '../utils/TerrainHelper.js';
 import { GrassSystem } from './GrassSystem.js';
+import { CloudSystem } from './CloudSystem.js';
 
 class TundraZone extends Zone {
   async load(scene) {
@@ -81,6 +82,9 @@ class TundraZone extends Zone {
     this.grassSystem = new GrassSystem(this, size, segments, heightFn, placementFn);
     this.grassSystem.generate();
 
+    // Initialize Cloud System
+    this.cloudSystem = new CloudSystem();
+    this.add(this.cloudSystem);
 
     // Color Function
     const colorRock = new THREE.Color(0x555555);
@@ -213,6 +217,10 @@ class TundraZone extends Zone {
   tick(delta, camera) {
       if (this.grassSystem) {
           this.grassSystem.tick(delta);
+      }
+
+      if (this.cloudSystem) {
+          this.cloudSystem.tick(delta);
       }
 
       if (camera && this.dirLight) {

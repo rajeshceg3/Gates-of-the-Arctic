@@ -16,12 +16,13 @@ class CameraRig {
 
     this.pitch = 0;
     this.yaw = 0;
+    this.roll = 0;
 
     this.currentHeight = 1.7;
 
-    // Initial position
-    this.camera.position.set(0, 1.7, 0); // 1.7m eye height
-    this.camera.rotation.order = 'YXZ'; // Yaw (Y) then Pitch (X)
+    // Head Bob & Breathing
+    this.headBobTimer = 0;
+    this.breathingTimer = 0;
   }
 
   tick(delta) {
@@ -30,29 +31,31 @@ class CameraRig {
     const targetYaw = this.input.look.x;
 
     // Lerp for smoothness
-    // Using a factor relative to delta, e.g. 10.0 * delta.
-    // If delta is 0.016 (60fps), factor is 0.16.
     const lookSmoothness = 10.0;
+
+    // Calculate delta for roll before updating yaw
+    const yawDiff = targetYaw - this.yaw;
+
     this.pitch += (targetPitch - this.pitch) * lookSmoothness * delta;
-    this.yaw += (targetYaw - this.yaw) * lookSmoothness * delta;
+    this.yaw += yawDiff * lookSmoothness * delta;
+
+    // Roll (Bank into turn)
+    // Turning Left (Yaw increasing) -> Roll Left (Positive Z)
+    const targetRoll = yawDiff * 10.0; // Exaggerate slightly for effect
+    // Clamp roll
+    const maxRoll = 0.05; // ~3 degrees
+    const clampedRoll = Math.max(-maxRoll, Math.min(maxRoll, targetRoll));
+
+    this.roll += (clampedRoll - this.roll) * 5.0 * delta;
 
     this.camera.rotation.x = this.pitch;
     this.camera.rotation.y = this.yaw;
+    this.camera.rotation.z = this.roll;
 
     // 2. Movement
-    // Use input directly
-    // z is Forward/Back in input (-1 to 1)?
-    // In InputController:
-    // move.z = forward(1) - backward(1). So Forward is +1?
-    // Wait, usually forward is -z in Three.js.
-    // Let's check InputController again.
-    // KeyW -> forward=true. updateMove -> move.z = forward(1) - backward(0) = 1.
-    // So +1 is Forward.
-
     const moveForward = this.input.move.z;
     const moveRight = this.input.move.x;
 
-    // Calculate direction relative to camera yaw (but flat on ground)
     const forwardDir = new Vector3(0, 0, -1).applyAxisAngle(new Vector3(0, 1, 0), this.yaw);
     const rightDir = new Vector3(1, 0, 0).applyAxisAngle(new Vector3(0, 1, 0), this.yaw);
 
@@ -60,17 +63,31 @@ class CameraRig {
     targetVelocity.addScaledVector(forwardDir, moveForward);
     targetVelocity.addScaledVector(rightDir, moveRight);
 
-    // Normalize if moving diagonally to avoid faster speed
     if (targetVelocity.lengthSq() > 0) {
         targetVelocity.normalize();
     }
 
     targetVelocity.multiplyScalar(this.maxSpeed);
 
-    // Lerp velocity for smooth acceleration/deceleration
     this.velocity.lerp(targetVelocity, this.smoothing * delta);
 
-    // Apply position
+    // Update Timers
+    const speed = this.velocity.length();
+    // Bob frequency increases with speed
+    this.headBobTimer += delta * 10.0 * (speed / this.maxSpeed);
+    this.breathingTimer += delta * 0.5;
+
+    // Calculate Offsets
+    // Bob: Sin wave on Y
+    // Only bob when moving
+    const bobY = Math.sin(this.headBobTimer) * 0.05 * Math.min(speed, 1.0);
+
+    // Breathing: Slow Sin on Y and Z (forward/back drift)
+    const breathY = Math.sin(this.breathingTimer) * 0.005;
+    // Breathing doesn't affect Z position directly as it fights movement,
+    // better to affect position only when idle?
+    // Let's just do Y for breathing to be safe and simple.
+
     this.camera.position.x += this.velocity.x * delta;
     this.camera.position.z += this.velocity.z * delta;
 
@@ -79,8 +96,8 @@ class CameraRig {
         const rayOrigin = new Vector3(this.camera.position.x, 1000, this.camera.position.z);
         this.raycaster.ray.origin.copy(rayOrigin);
 
-        // Intersect with terrain
-        // We look for objects named 'terrain'
+        // Optimization: In a real app we'd cache the terrain object.
+        // For now, this is acceptable for MVP.
         const intersects = this.raycaster.intersectObjects(this.scene.children, true);
 
         let groundHeight = 0;
@@ -96,16 +113,12 @@ class CameraRig {
 
         if (found) {
              const targetHeight = groundHeight + 1.7;
-             // console.log(`Ground found at ${groundHeight.toFixed(2)}, moving to ${targetHeight.toFixed(2)}, current ${this.currentHeight.toFixed(2)}`);
-             // Smoothly adjust height
              const heightSmoothing = 5.0;
              this.currentHeight += (targetHeight - this.currentHeight) * heightSmoothing * delta;
-        } else {
-             // Fallback if no ground found (e.g. flying or loading)
-             console.log(`No ground found. Camera at ${this.camera.position.y.toFixed(2)}`);
         }
 
-        this.camera.position.y = this.currentHeight;
+        // Combine all Y modifiers
+        this.camera.position.y = this.currentHeight + bobY + breathY;
     }
   }
 }

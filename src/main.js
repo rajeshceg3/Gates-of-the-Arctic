@@ -35,22 +35,33 @@ async function main() {
   const zoneManager = new ZoneManager(scene, camera);
   const audio = new AudioManager();
 
-  // Initialize audio and hide UI on first user interaction
-  const initInteraction = () => {
-    audio.init();
+  // Initialize audio and hide Landing Screen on button click
+  const startBtn = document.getElementById('start-btn');
+  if (startBtn) {
+      startBtn.addEventListener('click', () => {
+          audio.init();
 
-    const ui = document.getElementById('instructions');
-    if (ui) {
-        ui.classList.add('fade-out');
-    }
+          // Hide Landing Screen
+          const landing = document.getElementById('landing-screen');
+          if (landing) {
+              landing.classList.add('fade-out');
+              setTimeout(() => { landing.style.display = 'none'; }, 2000);
+          }
 
-    window.removeEventListener('click', initInteraction);
-    window.removeEventListener('keydown', initInteraction);
-    window.removeEventListener('touchstart', initInteraction);
-  };
-  window.addEventListener('click', initInteraction);
-  window.addEventListener('keydown', initInteraction);
-  window.addEventListener('touchstart', initInteraction);
+          // Show HUD
+          const ui = document.getElementById('ui');
+          if (ui) {
+              ui.classList.remove('hidden');
+              ui.classList.add('visible');
+
+              // Trigger Zone Label
+              zoneManager.showLabel('tundra');
+          }
+
+          // Request Pointer Lock (Desktop)
+          document.body.requestPointerLock();
+      });
+  }
 
   // Register Zones
   zoneManager.register('tundra', TundraZone);

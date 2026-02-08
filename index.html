@@ -2,19 +2,49 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Quiet North</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@300;400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./src/style.css" />
   </head>
   <body>
-    <div id="ui">
-      <div id="instructions">
-        <p>Use WASD or Arrows to move.</p>
-        <p>Mouse to look.</p>
-        <p>Click to Enable Audio.</p>
+    <!-- Landing Screen -->
+    <div id="landing-screen">
+      <div class="content">
+        <h1>Quiet North</h1>
+        <p class="subtitle">An immersive journey into the wild.</p>
+        <button id="start-btn">Begin Journey</button>
+        <p class="headphones-hint">Headphones Recommended</p>
       </div>
-      <div id="zone-label"></div>
     </div>
+
+    <!-- Main UI (HUD) -->
+    <div id="ui" class="hidden">
+      <!-- Zone Label (Center) -->
+      <div id="zone-label-container">
+        <div id="zone-label"></div>
+      </div>
+
+      <!-- Controls Hint (Bottom Left/Right) -->
+      <div id="controls-hint">
+        <div class="desktop-hint">
+          <p>WASD / Arrows to Move</p>
+          <p>Mouse to Look</p>
+        </div>
+        <div class="mobile-hint">
+          <p>Drag to Move & Look</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Touch Indicator -->
+    <div id="touch-indicator" class="hidden">
+      <div class="ring"></div>
+      <div class="dot"></div>
+    </div>
+
     <div id="transition-overlay"></div>
     <div id="app"></div>
     <script type="module" src="./src/main.js"></script>

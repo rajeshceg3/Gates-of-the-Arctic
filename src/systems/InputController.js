@@ -33,6 +33,13 @@ class InputController {
 
     this.touchStart = { x: 0, y: 0 };
     this.touchOriginY = 0;
+
+    // UI Feedback for Touch
+    this.ui = {
+      container: document.getElementById('touch-indicator'),
+      ring: document.querySelector('#touch-indicator .ring'),
+      dot: document.querySelector('#touch-indicator .dot')
+    };
   }
 
   _onKeyDown(event) {
@@ -80,9 +87,27 @@ class InputController {
 
   _onTouchStart(event) {
     if (event.touches.length === 1) {
-      this.touchStart.x = event.touches[0].clientX;
-      this.touchStart.y = event.touches[0].clientY;
-      this.touchOriginY = event.touches[0].clientY;
+      const x = event.touches[0].clientX;
+      const y = event.touches[0].clientY;
+
+      this.touchStart.x = x;
+      this.touchStart.y = y;
+      this.touchOriginY = y;
+
+      // Show UI
+      if (this.ui.container) {
+        this.ui.container.classList.add('visible');
+        if (this.ui.ring) {
+            this.ui.ring.style.display = 'block';
+            this.ui.ring.style.left = x + 'px';
+            this.ui.ring.style.top = y + 'px';
+        }
+        if (this.ui.dot) {
+            this.ui.dot.style.display = 'block';
+            this.ui.dot.style.left = x + 'px';
+            this.ui.dot.style.top = y + 'px';
+        }
+      }
     }
   }
 
@@ -124,11 +149,24 @@ class InputController {
       // Update touchStart for incremental look calculation
       this.touchStart.x = touch.clientX;
       this.touchStart.y = touch.clientY;
+
+      // Update UI Dot Position
+      if (this.ui.dot) {
+          this.ui.dot.style.left = touch.clientX + 'px';
+          this.ui.dot.style.top = touch.clientY + 'px';
+      }
     }
   }
 
   _onTouchEnd(event) {
     this.move.z = 0;
+
+    // Hide UI
+    if (this.ui.container) {
+        this.ui.container.classList.remove('visible');
+        if (this.ui.ring) this.ui.ring.style.display = 'none';
+        if (this.ui.dot) this.ui.dot.style.display = 'none';
+    }
   }
 }
 

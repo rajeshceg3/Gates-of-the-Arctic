@@ -1,10 +1,22 @@
+:root {
+  --font-title: 'Cinzel', serif;
+  --font-body: 'Lato', sans-serif;
+  --color-dark: #0a0a0a;
+  --color-light: #f5f5f5;
+  --color-accent: #a0c4ff;
+  --transition-slow: 2s ease-in-out;
+  --transition-fast: 0.3s ease;
+}
+
 body {
   margin: 0;
   padding: 0;
   overflow: hidden;
-  background-color: #000;
-  font-family: sans-serif;
+  background-color: var(--color-dark);
+  font-family: var(--font-body);
+  color: var(--color-light);
   user-select: none;
+  -webkit-font-smoothing: antialiased;
 }
 
 canvas {
@@ -13,66 +25,233 @@ canvas {
   height: 100vh;
 }
 
-#ui {
+/* Landing Screen */
+#landing-screen {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  pointer-events: none; /* Let clicks pass through to canvas/listeners */
   display: flex;
   justify-content: center;
-  align-items: flex-end;
-  padding-bottom: 50px;
-  z-index: 10;
+  align-items: center;
+  flex-direction: column;
+  background: linear-gradient(to bottom, #1a2a3a, #000);
+  z-index: 100;
+  transition: opacity 1.5s ease-in-out;
 }
 
-#instructions {
-  color: rgba(255, 255, 255, 0.7);
+#landing-screen.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#landing-screen .content {
   text-align: center;
-  font-size: 14px;
-  opacity: 1;
-  transition: opacity 2s ease-in-out;
+  animation: fadeIn 2s ease-out;
 }
 
-/* Helper class to fade out */
-.fade-out {
-  opacity: 0 !important;
+#landing-screen h1 {
+  font-family: var(--font-title);
+  font-size: 4rem;
+  letter-spacing: 0.5rem;
+  margin: 0 0 1rem 0;
+  text-transform: uppercase;
+  text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+  color: white;
 }
 
+#landing-screen .subtitle {
+  font-size: 1.2rem;
+  opacity: 0.8;
+  margin-bottom: 3rem;
+  letter-spacing: 3px;
+  font-weight: 300;
+}
+
+#start-btn {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.3);
+  color: var(--color-light);
+  padding: 1rem 3rem;
+  font-family: var(--font-title);
+  font-size: 1rem;
+  letter-spacing: 3px;
+  cursor: pointer;
+  transition: all 0.4s ease;
+  text-transform: uppercase;
+}
+
+#start-btn:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: var(--color-light);
+  transform: scale(1.05);
+}
+
+.headphones-hint {
+  margin-top: 3rem;
+  font-size: 0.8rem;
+  opacity: 0.5;
+  font-style: italic;
+  letter-spacing: 1px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Transition Overlay */
 #transition-overlay {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: black;
+  background-color: #000;
   opacity: 0;
   pointer-events: none;
   transition: opacity 1s ease-in-out;
-  z-index: 20;
+  z-index: 50;
 }
 
 .active-transition {
   opacity: 1 !important;
 }
 
-#zone-label {
+/* UI HUD */
+#ui {
   position: absolute;
-  bottom: 100px;
+  top: 0;
   left: 0;
   width: 100%;
-  text-align: center;
-  color: rgba(255, 255, 255, 0.6);
-  font-family: sans-serif;
-  font-size: 1.2rem;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  opacity: 0;
-  transition: opacity 2s ease-in-out;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+  transition: opacity 1s ease-in-out;
+  opacity: 0; /* Hidden initially */
+}
+
+#ui.visible {
+  opacity: 1;
+}
+
+/* Zone Label */
+#zone-label-container {
+  position: absolute;
+  top: 40%;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transform: translateY(-50%);
   pointer-events: none;
 }
 
-.visible {
+#zone-label {
+  font-family: var(--font-title);
+  font-size: 3rem;
+  letter-spacing: 1rem;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 0 30px rgba(0,0,0,0.8), 0 2px 4px rgba(0,0,0,0.8);
+  opacity: 0;
+  transition: opacity 2s ease-in-out, letter-spacing 4s ease-out;
+}
+
+#zone-label.label-visible {
   opacity: 1 !important;
+  letter-spacing: 1.5rem; /* Tracking animation */
+}
+
+/* Controls Hint */
+#controls-hint {
+  position: absolute;
+  bottom: 2rem;
+  left: 2rem;
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.6);
+  background: rgba(0,0,0,0.3);
+  padding: 1rem;
+  border-radius: 4px;
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255,255,255,0.1);
+  transition: opacity 0.5s ease;
+}
+
+#controls-hint p {
+  margin: 0.2rem 0;
+}
+
+.desktop-hint { display: block; }
+.mobile-hint { display: none; }
+
+/* Touch Indicator */
+#touch-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 40;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+#touch-indicator.visible {
+  opacity: 1;
+}
+
+#touch-indicator .ring {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 10px rgba(255,255,255,0.1);
+  /* Initially hidden off-screen or handled via JS */
+  display: none;
+}
+
+#touch-indicator .dot {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: rgba(255,255,255,0.8);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 10px rgba(255,255,255,0.5);
+  display: none;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+  #landing-screen h1 {
+    font-size: 2.5rem;
+    letter-spacing: 0.2rem;
+  }
+
+  #controls-hint {
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 3rem;
+    width: auto;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .desktop-hint { display: none; }
+  .mobile-hint { display: block; }
+
+  #zone-label {
+    font-size: 1.5rem;
+    letter-spacing: 0.5rem;
+  }
+
+  .label-visible {
+    letter-spacing: 0.8rem !important;
+  }
 }

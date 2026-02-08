@@ -145,7 +145,7 @@ class CanyonZone extends Zone {
     const points = pds.fill();
     const offset = sampleSize / 2;
 
-    let rockGeo = new THREE.DodecahedronGeometry(1.5);
+    let rockGeo = new THREE.IcosahedronGeometry(1.5, 0);
     rockGeo = distortGeometry(rockGeo, 2, 0.3);
     const rockMat = new THREE.MeshStandardMaterial({ color: 0x804030, roughness: 0.9 });
     const rocks = new THREE.InstancedMesh(rockGeo, rockMat, points.length);

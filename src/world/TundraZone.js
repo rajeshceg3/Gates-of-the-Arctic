@@ -106,7 +106,7 @@ class TundraZone extends Zone {
 
     // Scattered elements (Rocks)
     // Distort a dodecahedron
-    let rockGeo = new THREE.DodecahedronGeometry(0.8);
+    let rockGeo = new THREE.IcosahedronGeometry(0.8, 0);
     rockGeo = distortGeometry(rockGeo, 2, 0.3);
 
     const rockMat = new THREE.MeshStandardMaterial({ color: 0x666666, flatShading: false, roughness: 0.8 });
@@ -124,7 +124,7 @@ class TundraZone extends Zone {
     // Pebbles (Small rocks)
     const pdsPebbles = new PoissonDiskSampling(sampleSize, sampleSize, 15, 15);
     const pebblePoints = pdsPebbles.fill();
-    let pebbleGeo = new THREE.DodecahedronGeometry(0.15);
+    let pebbleGeo = new THREE.IcosahedronGeometry(0.15, 0);
     pebbleGeo = distortGeometry(pebbleGeo, 5, 0.05);
     const pebbleMat = new THREE.MeshStandardMaterial({ color: 0x444444, flatShading: false, roughness: 0.9 });
     const pebbles = new THREE.InstancedMesh(pebbleGeo, pebbleMat, pebblePoints.length);

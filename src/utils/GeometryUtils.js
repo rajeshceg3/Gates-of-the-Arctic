@@ -7,13 +7,20 @@ export function distortGeometry(geometry, scale = 1, amount = 0.1) {
         const y = pos.getY(i);
         const z = pos.getZ(i);
 
-        // Simple 3D noise offset
-        const d = noise(x * scale, y * scale, z * scale) * amount;
+        // Independent noise for each axis
+        // Offsets (1000, 2000, 3000) are large enough to sample uncorrelated noise regions
+        const nx = noise(x * scale, y * scale, z * scale);
+        const ny = noise(x * scale + 1000, y * scale + 1000, z * scale + 1000);
+        const nz = noise(x * scale + 2000, y * scale + 2000, z * scale + 2000);
 
-        // Apply distortion uniformly for now, or could bias towards normals
-        pos.setX(i, x + d);
-        pos.setY(i, y + d);
-        pos.setZ(i, z + d);
+        // Center distortion around 0 (-0.5 to 0.5)
+        const dx = (nx - 0.5) * amount;
+        const dy = (ny - 0.5) * amount;
+        const dz = (nz - 0.5) * amount;
+
+        pos.setX(i, x + dx);
+        pos.setY(i, y + dy);
+        pos.setZ(i, z + dz);
     }
     geometry.computeVertexNormals();
     return geometry;

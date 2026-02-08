@@ -235,7 +235,7 @@ class ForestZone extends Zone {
      const h = 4 + Math.random() * 3; // Height 4-7
 
      // Trunk
-     const trunk = new THREE.CylinderGeometry(0.2, 0.4, h, 7);
+     const trunk = new THREE.CylinderGeometry(0.2, 0.4, h, 10);
      trunk.translate(0, h/2, 0);
      distortGeometry(trunk, 2, 0.05);
      woodGeos.push(trunk);
@@ -258,7 +258,7 @@ class ForestZone extends Zone {
             const len = radius * (0.6 + Math.random() * 0.6);
 
             // Branch Wood
-            const branch = new THREE.CylinderGeometry(0.04, 0.1, len, 4);
+            const branch = new THREE.CylinderGeometry(0.04, 0.1, len, 6);
             branch.translate(0, len/2, 0);
             branch.rotateZ(Math.PI / 2 + 0.1); // Angle down
             branch.rotateY(angle);

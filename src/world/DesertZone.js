@@ -138,12 +138,12 @@ class DesertZone extends Zone {
     const cactusMat = new THREE.MeshStandardMaterial({ color: 0x4a6a3a, roughness: 0.8 });
 
     // Dry Bushes
-    let bushGeo = new THREE.DodecahedronGeometry(0.4);
+    let bushGeo = new THREE.IcosahedronGeometry(0.4, 0);
     bushGeo = distortGeometry(bushGeo, 3, 0.2);
     const bushMat = new THREE.MeshStandardMaterial({ color: 0x665544, roughness: 1.0 });
 
     // Rocks
-    let rockGeo = new THREE.DodecahedronGeometry(0.8);
+    let rockGeo = new THREE.IcosahedronGeometry(0.8, 0);
     rockGeo = distortGeometry(rockGeo, 2, 0.2);
     const rockMat = new THREE.MeshStandardMaterial({ color: 0x805040, roughness: 0.9 });
 

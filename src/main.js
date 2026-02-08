@@ -32,7 +32,7 @@ async function main() {
   const loop = new Loop(camera, scene, renderer);
   const input = new InputController();
   const rig = new CameraRig(camera, input, scene);
-  const audio = new AudioManager();
+  const audio = new AudioManager(camera);
   const zoneManager = new ZoneManager(scene, camera, audio);
 
   // Initialize audio and hide Landing Screen on button click
@@ -90,6 +90,7 @@ async function main() {
 
   loop.updatables.push(rig);
   loop.updatables.push(zoneManager);
+  loop.updatables.push(audio);
 
   loop.start();
 

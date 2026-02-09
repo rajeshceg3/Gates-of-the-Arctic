@@ -23,6 +23,11 @@ class CameraRig {
     // Head Bob & Breathing
     this.headBobTimer = 0;
     this.breathingTimer = 0;
+
+    // Physical Presence
+    this.landingOffset = 0;
+    this.lastGroundY = 0;
+    this.sway = 0;
   }
 
   tick(delta) {
@@ -48,9 +53,13 @@ class CameraRig {
 
     this.roll += (clampedRoll - this.roll) * 5.0 * delta;
 
+    // Organic Sway (Lag behind yaw)
+    // When turning right (yawDiff < 0), head tilts slightly left first due to inertia
+    this.sway += (yawDiff * -5.0 - this.sway) * 2.0 * delta;
+
     this.camera.rotation.x = this.pitch;
     this.camera.rotation.y = this.yaw;
-    this.camera.rotation.z = this.roll;
+    this.camera.rotation.z = this.roll + this.sway * 0.5;
 
     // 2. Movement
     const moveForward = this.input.move.z;
@@ -112,13 +121,23 @@ class CameraRig {
         }
 
         if (found) {
+             // Landing Effect detection
+             const drop = this.lastGroundY - groundHeight;
+             if (drop > 0.5) { // Stepped down significantly
+                 this.landingOffset = -0.2 * Math.min(drop, 1.0); // Dip proportional to drop
+             }
+             this.lastGroundY = groundHeight;
+
              const targetHeight = groundHeight + 1.7;
              const heightSmoothing = 5.0;
              this.currentHeight += (targetHeight - this.currentHeight) * heightSmoothing * delta;
         }
 
+        // Recover Landing Offset (Spring back up)
+        this.landingOffset += (0 - this.landingOffset) * 5.0 * delta;
+
         // Combine all Y modifiers
-        this.camera.position.y = this.currentHeight + bobY + breathY;
+        this.camera.position.y = this.currentHeight + bobY + breathY + this.landingOffset;
     }
   }
 }

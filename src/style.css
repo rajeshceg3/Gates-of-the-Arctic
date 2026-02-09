@@ -3,9 +3,13 @@
   --font-body: 'Lato', sans-serif;
   --color-dark: #0a0a0a;
   --color-light: #f5f5f5;
-  --color-accent: #a0c4ff;
-  --transition-slow: 2s ease-in-out;
-  --transition-fast: 0.3s ease;
+  --color-accent: #a0c4ff; /* Pale blue */
+  --color-gold: #d4af37; /* Subtle gold for highlights */
+  --transition-slow: 2s cubic-bezier(0.22, 1, 0.36, 1);
+  --transition-fast: 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+  --glass-blur: blur(20px);
 }
 
 body {
@@ -17,6 +21,7 @@ body {
   color: var(--color-light);
   user-select: none;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 canvas {
@@ -36,7 +41,7 @@ canvas {
   justify-content: center;
   align-items: center;
   flex-direction: column;
-  background: linear-gradient(to bottom, #1a2a3a, #000);
+  background: radial-gradient(circle at center, #1a2a3a 0%, #050505 100%);
   z-index: 100;
   transition: opacity 1.5s ease-in-out;
 }
@@ -48,57 +53,106 @@ canvas {
 
 #landing-screen .content {
   text-align: center;
-  animation: fadeIn 2s ease-out;
+  animation: fadeIn 2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 #landing-screen h1 {
   font-family: var(--font-title);
-  font-size: 4rem;
-  letter-spacing: 0.5rem;
-  margin: 0 0 1rem 0;
+  font-size: 5rem;
+  letter-spacing: 0.8rem;
+  margin: 0 0 1.5rem 0;
   text-transform: uppercase;
-  text-shadow: 0 4px 10px rgba(0,0,0,0.5);
-  color: white;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 4px 20px rgba(0,0,0,0.6);
+  opacity: 0;
+  animation: slideUp 1.5s cubic-bezier(0.22, 1, 0.36, 1) forwards 0.2s;
 }
 
 #landing-screen .subtitle {
   font-size: 1.2rem;
-  opacity: 0.8;
-  margin-bottom: 3rem;
-  letter-spacing: 3px;
+  opacity: 0;
+  margin-bottom: 4rem;
+  letter-spacing: 4px;
   font-weight: 300;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+  animation: slideUp 1.5s cubic-bezier(0.22, 1, 0.36, 1) forwards 0.5s;
 }
 
+/* Slick Button */
 #start-btn {
+  position: relative;
   background: transparent;
-  border: 1px solid rgba(255,255,255,0.3);
+  border: none;
   color: var(--color-light);
-  padding: 1rem 3rem;
+  padding: 1.2rem 4rem;
   font-family: var(--font-title);
-  font-size: 1rem;
-  letter-spacing: 3px;
+  font-size: 1.1rem;
+  letter-spacing: 4px;
   cursor: pointer;
-  transition: all 0.4s ease;
   text-transform: uppercase;
+  overflow: hidden;
+  transition: all var(--transition-fast);
+  opacity: 0;
+  animation: slideUp 1.5s cubic-bezier(0.22, 1, 0.36, 1) forwards 0.8s;
+}
+
+#start-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  transition: all var(--transition-fast);
+}
+
+#start-btn::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  right: 4px;
+  bottom: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all var(--transition-fast);
 }
 
 #start-btn:hover {
-  background: rgba(255,255,255,0.1);
-  border-color: var(--color-light);
-  transform: scale(1.05);
+  color: #fff;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  transform: scale(1.02);
+}
+
+#start-btn:hover::before {
+  border-color: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+}
+
+#start-btn:hover::after {
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 .headphones-hint {
-  margin-top: 3rem;
+  margin-top: 4rem;
   font-size: 0.8rem;
-  opacity: 0.5;
+  opacity: 0;
   font-style: italic;
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
+  color: rgba(255, 255, 255, 0.4);
+  animation: fadeIn 2s ease-out forwards 1.2s;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* Transition Overlay */
@@ -111,7 +165,7 @@ canvas {
   background-color: #000;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 1s ease-in-out;
+  transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 50;
 }
 
@@ -128,8 +182,8 @@ canvas {
   height: 100%;
   pointer-events: none;
   z-index: 10;
+  opacity: 0;
   transition: opacity 1s ease-in-out;
-  opacity: 0; /* Hidden initially */
 }
 
 #ui.visible {
@@ -139,7 +193,7 @@ canvas {
 /* Zone Label */
 #zone-label-container {
   position: absolute;
-  top: 40%;
+  top: 35%;
   left: 0;
   width: 100%;
   display: flex;
@@ -151,43 +205,62 @@ canvas {
 
 #zone-label {
   font-family: var(--font-title);
-  font-size: 3rem;
-  letter-spacing: 1rem;
+  font-size: 4rem;
+  letter-spacing: 1.5rem;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.95);
-  text-shadow: 0 0 30px rgba(0,0,0,0.8), 0 2px 4px rgba(0,0,0,0.8);
+  text-shadow: 0 0 30px rgba(0,0,0,0.5), 0 4px 10px rgba(0,0,0,0.3);
   opacity: 0;
-  transition: opacity 2s ease-in-out, letter-spacing 4s ease-out;
+  filter: blur(20px);
+  transform: scale(0.95);
+  transition:
+    opacity 1.5s ease-out,
+    filter 1.5s ease-out,
+    transform 1.5s ease-out,
+    letter-spacing 3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 #zone-label.label-visible {
   opacity: 1 !important;
-  letter-spacing: 1.5rem; /* Tracking animation */
+  filter: blur(0px);
+  transform: scale(1);
+  letter-spacing: 2rem; /* Cinematic tracking */
 }
 
-/* Controls Hint */
+/* Controls Hint - Glassmorphism */
 #controls-hint {
   position: absolute;
-  bottom: 2rem;
-  left: 2rem;
-  font-size: 0.9rem;
-  color: rgba(255,255,255,0.6);
-  background: rgba(0,0,0,0.3);
-  padding: 1rem;
-  border-radius: 4px;
-  backdrop-filter: blur(5px);
-  border: 1px solid rgba(255,255,255,0.1);
-  transition: opacity 0.5s ease;
+  bottom: 3rem;
+  left: 3rem;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+  background: var(--glass-bg);
+  padding: 1.5rem 2rem;
+  border-radius: 2px;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: var(--glass-border);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+#controls-hint:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 #controls-hint p {
-  margin: 0.2rem 0;
+  margin: 0.4rem 0;
+  letter-spacing: 1px;
+  font-weight: 300;
+  text-transform: uppercase;
+  font-size: 0.75rem;
 }
 
 .desktop-hint { display: block; }
 .mobile-hint { display: none; }
 
-/* Touch Indicator */
+/* Touch Indicator - Elegant Style */
 #touch-indicator {
   position: absolute;
   top: 0;
@@ -197,7 +270,7 @@ canvas {
   pointer-events: none;
   z-index: 40;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.3s ease;
 }
 
 #touch-indicator.visible {
@@ -206,52 +279,84 @@ canvas {
 
 #touch-indicator .ring {
   position: absolute;
-  width: 100px;
-  height: 100px;
-  border: 2px solid rgba(255,255,255,0.3);
+  width: 80px;
+  height: 80px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 50%;
   transform: translate(-50%, -50%);
-  box-shadow: 0 0 10px rgba(255,255,255,0.1);
-  /* Initially hidden off-screen or handled via JS */
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.05);
   display: none;
+  transition: transform 0.1s ease;
 }
 
 #touch-indicator .dot {
   position: absolute;
-  width: 20px;
-  height: 20px;
-  background: rgba(255,255,255,0.8);
+  width: 12px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.9);
   border-radius: 50%;
   transform: translate(-50%, -50%);
-  box-shadow: 0 0 10px rgba(255,255,255,0.5);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.6);
   display: none;
+  transition: transform 0.05s linear; /* Slightly faster for responsiveness */
 }
 
 /* Mobile Optimizations */
 @media (max-width: 768px) {
   #landing-screen h1 {
-    font-size: 2.5rem;
-    letter-spacing: 0.2rem;
+    font-size: 2.8rem;
+    letter-spacing: 0.4rem;
+    margin-bottom: 1rem;
+  }
+
+  #landing-screen .subtitle {
+    font-size: 0.9rem;
+    letter-spacing: 2px;
+    margin-bottom: 3rem;
+  }
+
+  #start-btn {
+    padding: 1rem 3rem;
+    font-size: 0.9rem;
   }
 
   #controls-hint {
     left: 50%;
     transform: translateX(-50%);
-    bottom: 3rem;
+    bottom: 4rem;
     width: auto;
+    padding: 1rem 2rem;
     text-align: center;
     white-space: nowrap;
+    border-radius: 30px; /* Pill shape for mobile looks better */
   }
 
   .desktop-hint { display: none; }
   .mobile-hint { display: block; }
 
   #zone-label {
-    font-size: 1.5rem;
+    font-size: 2rem;
     letter-spacing: 0.5rem;
   }
 
-  .label-visible {
+  #zone-label.label-visible {
     letter-spacing: 0.8rem !important;
   }
+
+  /* Adjust touch indicator size for mobile fingers */
+  #touch-indicator .ring {
+    width: 100px;
+    height: 100px;
+    border-width: 1px;
+  }
+
+  #touch-indicator .dot {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* Scrollbar Hide */
+::-webkit-scrollbar {
+  display: none;
 }

@@ -4,6 +4,8 @@ import { noise } from '../utils/Noise.js';
 import { distortGeometry } from '../utils/GeometryUtils.js';
 import { PoissonDiskSampling } from '../utils/PoissonDiskSampling.js';
 import { TerrainHelper } from '../utils/TerrainHelper.js';
+import { GrassSystem } from './GrassSystem.js';
+import { CloudSystem } from './CloudSystem.js';
 
 class RiverZone extends Zone {
   constructor() {
@@ -53,11 +55,11 @@ class RiverZone extends Zone {
     this.add(new THREE.Mesh(skyGeo, skyMat));
 
     // Lighting
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x443333, 0.6); // Warmer ambient
     hemiLight.position.set(0, 20, 0);
     this.add(hemiLight);
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    const dirLight = new THREE.DirectionalLight(0xffeebb, 1.0); // Warmer sun
     dirLight.position.set(20, 50, -30);
     dirLight.castShadow = true;
     dirLight.shadow.bias = -0.0005;
@@ -163,6 +165,23 @@ class RiverZone extends Zone {
     // Small Rocks
     const pdsSmall = new PoissonDiskSampling(sampleSize, sampleSize, 30, 15);
     this.addRocks(pdsSmall.fill(), 0.5, 1.5, 0x555555, offset);
+
+    // Initialize Grass System
+    const placementFn = (x, z, h) => {
+        // Place grass on banks
+        // River bed is roughly < -5
+        // Banks are around 0 to 10
+        // Avoid water
+        let n = noise(x * 0.1, z * 0.1);
+        return h > -2.0 && h < 15.0 && n > -0.1;
+    };
+
+    this.grassSystem = new GrassSystem(this, size, segments, heightFn, placementFn);
+    this.grassSystem.generate();
+
+    // Initialize Cloud System
+    this.cloudSystem = new CloudSystem();
+    this.add(this.cloudSystem);
   }
 
   addRocks(points, minScale, maxScale, colorHex, offset) {
@@ -212,6 +231,13 @@ class RiverZone extends Zone {
 
   tick(delta, camera) {
       this.time += delta;
+
+      if (this.grassSystem) {
+          this.grassSystem.tick(delta);
+      }
+      if (this.cloudSystem) {
+          this.cloudSystem.tick(delta);
+      }
 
       // Animate Water
       if (this.water) {

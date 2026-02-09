@@ -5,6 +5,8 @@ import { distortGeometry } from '../utils/GeometryUtils.js';
 import { PoissonDiskSampling } from '../utils/PoissonDiskSampling.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { TerrainHelper } from '../utils/TerrainHelper.js';
+import { GrassSystem } from './GrassSystem.js';
+import { CloudSystem } from './CloudSystem.js';
 
 class ForestZone extends Zone {
   async load(scene) {
@@ -54,7 +56,7 @@ class ForestZone extends Zone {
     hemiLight.position.set(0, 50, 0);
     this.add(hemiLight);
 
-    const dirLight = new THREE.DirectionalLight(0xffaa88, 1.0);
+    const dirLight = new THREE.DirectionalLight(0xffbb99, 1.0); // Slightly warmer
     dirLight.position.set(-50, 30, -50);
     dirLight.castShadow = true;
     dirLight.shadow.bias = -0.0005;
@@ -211,6 +213,20 @@ class ForestZone extends Zone {
          rocks.setColorAt(i, instColor);
     });
     this.add(rocks);
+
+    // Initialize Grass System
+    const placementFn = (x, z, h) => {
+        // Cover ground but with some noise patchiness
+        let n = noise(x * 0.1, z * 0.1);
+        return h < 10.0 && n > -0.3;
+    };
+
+    this.grassSystem = new GrassSystem(this, size, segments, heightFn, placementFn);
+    this.grassSystem.generate();
+
+    // Initialize Cloud System
+    this.cloudSystem = new CloudSystem();
+    this.add(this.cloudSystem);
   }
 
   createTreeGeometry(seed) {
@@ -303,6 +319,13 @@ class ForestZone extends Zone {
   }
 
   tick(delta, camera) {
+      if (this.grassSystem) {
+          this.grassSystem.tick(delta);
+      }
+      if (this.cloudSystem) {
+          this.cloudSystem.tick(delta);
+      }
+
       if (camera && this.dirLight) {
           const x = camera.position.x;
           const z = camera.position.z;

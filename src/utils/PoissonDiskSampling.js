@@ -50,9 +50,9 @@ export class PoissonDiskSampling {
 
           if (newCol >= 0 && newCol < this.cols && newRow >= 0 && newRow < this.rows) {
              let ok = true;
-             // Check neighbors
-             for (let dx = -1; dx <= 1; dx++) {
-               for (let dy = -1; dy <= 1; dy++) {
+             // Check neighbors (5x5 grid for r/sqrt(2) cell size)
+             for (let dx = -2; dx <= 2; dx++) {
+               for (let dy = -2; dy <= 2; dy++) {
                  const neighborCol = newCol + dx;
                  const neighborRow = newRow + dy;
                  if (neighborCol >= 0 && neighborCol < this.cols && neighborRow >= 0 && neighborRow < this.rows) {

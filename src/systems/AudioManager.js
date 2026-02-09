@@ -59,6 +59,17 @@ class AudioManager {
     }
   }
 
+  toggleMute() {
+    if (!this.masterGain) return false;
+    if (this.masterGain.gain.value > 0.01) {
+      this.masterGain.gain.setTargetAtTime(0, this.context.currentTime, 0.1);
+      return true; // isMuted
+    } else {
+      this.masterGain.gain.setTargetAtTime(0.5, this.context.currentTime, 0.1);
+      return false; // !isMuted
+    }
+  }
+
   tick(delta) {
     if (!this.isInitialized) return;
 

@@ -3,8 +3,9 @@
 > vite
 
 
-  VITE v7.3.1  ready in 287 ms
+  VITE v7.3.1  ready in 239 ms
 
   ➜  Local:   http://localhost:5173/
   ➜  Network: use --host to expose
-10:44:16 AM [vite] (client) page reload src/utils/PoissonDiskSampling.js
+8:18:36 PM [vite] (client) page reload index.html
+8:27:04 PM [vite] (client) page reload src/systems/InputController.js

@@ -64,6 +64,41 @@ async function main() {
       });
   }
 
+  // Settings & Pause Menu Logic
+  const settingsBtn = document.getElementById('settings-btn');
+  const settingsMenu = document.getElementById('settings-menu');
+  const resumeBtn = document.getElementById('resume-btn');
+  const audioBtn = document.getElementById('audio-btn');
+
+  if (settingsBtn && settingsMenu) {
+    settingsBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      settingsMenu.classList.remove('hidden');
+      input.setPaused(true);
+      document.exitPointerLock();
+    });
+  }
+
+  if (resumeBtn && settingsMenu) {
+    resumeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      settingsMenu.classList.add('hidden');
+      input.setPaused(false);
+      // Only request lock if not touch (simple heuristic)
+      if (!('ontouchstart' in window) || window.innerWidth > 768) {
+        document.body.requestPointerLock();
+      }
+    });
+  }
+
+  if (audioBtn) {
+    audioBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isMuted = audio.toggleMute();
+      audioBtn.textContent = isMuted ? "UNMUTE AUDIO" : "MUTE AUDIO";
+    });
+  }
+
   // Register Zones
   zoneManager.register('tundra', TundraZone);
   zoneManager.register('mountain', MountainZone);

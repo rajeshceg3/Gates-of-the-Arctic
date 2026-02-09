@@ -2,6 +2,8 @@ import { Zone } from './Zone.js';
 import * as THREE from 'three';
 import { noise } from '../utils/Noise.js';
 import { TerrainHelper } from '../utils/TerrainHelper.js';
+import { GrassSystem } from './GrassSystem.js';
+import { CloudSystem } from './CloudSystem.js';
 
 class MountainZone extends Zone {
   async load(scene) {
@@ -14,11 +16,11 @@ class MountainZone extends Zone {
     }
 
     // Lighting
-    const hemiLight = new THREE.HemisphereLight(0xeef0ff, 0x222222, 0.5);
+    const hemiLight = new THREE.HemisphereLight(0xeef0ff, 0x443333, 0.6); // Warmer ambient
     hemiLight.position.set(0, 50, 0);
     this.add(hemiLight);
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    const dirLight = new THREE.DirectionalLight(0xffeebb, 1.0); // Warmer sun
     dirLight.position.set(20, 50, 20);
     dirLight.castShadow = true;
     dirLight.shadow.bias = -0.0005;
@@ -129,9 +131,32 @@ class MountainZone extends Zone {
     terrain.receiveShadow = true;
     terrain.name = 'terrain';
     this.add(terrain);
+
+    // Initialize Grass System
+    const placementFn = (x, z, h) => {
+        // Place grass in valleys (low height)
+        // Avoid very steep slopes if possible (we don't have slope here easily, but h < 50 is safe valley)
+        // Also add some noise to patchiness
+        let n = noise(x * 0.1, z * 0.1);
+        return h < 50 && n > -0.2;
+    };
+
+    this.grassSystem = new GrassSystem(this, size, segments, heightFn, placementFn);
+    this.grassSystem.generate();
+
+    // Initialize Cloud System
+    this.cloudSystem = new CloudSystem();
+    this.add(this.cloudSystem);
   }
 
   tick(delta, camera) {
+      if (this.grassSystem) {
+          this.grassSystem.tick(delta);
+      }
+      if (this.cloudSystem) {
+          this.cloudSystem.tick(delta);
+      }
+
       if (camera && this.dirLight) {
           const x = camera.position.x;
           const z = camera.position.z;

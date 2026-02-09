@@ -1,8 +1,11 @@
+import { AtmosphereSystem } from './AtmosphereSystem.js';
+
 class ZoneManager {
   constructor(scene, camera, audioManager) {
     this.scene = scene;
     this.camera = camera;
     this.audioManager = audioManager;
+    this.atmosphere = new AtmosphereSystem(scene);
     this.currentZone = null;
     this.zones = {};
     this.labelTimeout = null;
@@ -39,6 +42,9 @@ class ZoneManager {
       if (this.audioManager) {
         this.audioManager.setTheme(name);
       }
+
+      // Update Atmosphere
+      this.atmosphere.setZone(name);
     } else {
       console.error(`Zone ${name} not found.`);
     }
@@ -80,6 +86,9 @@ class ZoneManager {
   tick(delta) {
     if (this.currentZone) {
       this.currentZone.tick(delta, this.camera);
+    }
+    if (this.atmosphere) {
+        this.atmosphere.tick(delta, this.camera.position);
     }
   }
 }

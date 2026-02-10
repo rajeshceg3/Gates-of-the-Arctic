@@ -10,6 +10,7 @@ import { ForestZone } from './world/ForestZone.js';
 import { SkyZone } from './world/SkyZone.js';
 import { AudioManager } from './systems/AudioManager.js';
 import { PostProcessingManager } from './systems/PostProcessing.js';
+import { FieldNoteSystem } from './systems/FieldNoteSystem.js';
 
 async function main() {
   const container = document.querySelector('#app');
@@ -32,7 +33,8 @@ async function main() {
   const input = new InputController();
   const rig = new CameraRig(camera, input, scene);
   const audio = new AudioManager(camera);
-  const zoneManager = new ZoneManager(scene, camera, audio);
+  const fieldNotes = new FieldNoteSystem(camera);
+  const zoneManager = new ZoneManager(scene, camera, audio, fieldNotes);
   const postProcessing = new PostProcessingManager(scene, camera, renderer);
   loop.setRenderCallback(() => postProcessing.render());
 
@@ -123,6 +125,7 @@ async function main() {
   loop.updatables.push(rig);
   loop.updatables.push(zoneManager);
   loop.updatables.push(audio);
+  loop.updatables.push(fieldNotes);
 
   loop.start();
 

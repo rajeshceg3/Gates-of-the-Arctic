@@ -3,9 +3,21 @@
 > vite
 
 
-  VITE v7.3.1  ready in 239 ms
+  VITE v7.3.1  ready in 366 ms
 
   ➜  Local:   http://localhost:5173/
   ➜  Network: use --host to expose
-8:18:36 PM [vite] (client) page reload index.html
-8:27:04 PM [vite] (client) page reload src/systems/InputController.js
+4:28:48 AM [vite] (client) page reload src/systems/FieldNoteSystem.js
+4:32:37 AM [vite] (client) page reload src/world/ZoneManager.js
+4:32:44 AM [vite] (client) page reload src/systems/FieldNoteSystem.js
+4:36:56 AM [vite] (client) page reload src/world/TundraZone.js
+4:41:30 AM [vite] (client) page reload src/world/TundraZone.js
+4:45:09 AM [vite] (client) page reload src/world/TundraZone.js
+4:48:35 AM [vite] (client) page reload src/world/TundraZone.js
+4:52:23 AM [vite] (client) page reload src/world/TundraZone.js
+4:57:27 AM [vite] (client) page reload src/world/TundraZone.js
+5:01:11 AM [vite] (client) page reload src/world/TundraZone.js
+5:03:04 AM [vite] (client) page reload src/systems/FieldNoteSystem.js
+5:03:09 AM [vite] (client) page reload src/systems/FieldNoteSystem.js
+5:03:14 AM [vite] (client) page reload src/systems/FieldNoteSystem.js
+5:03:20 AM [vite] (client) page reload src/world/TundraZone.js

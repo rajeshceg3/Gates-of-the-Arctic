@@ -105,6 +105,12 @@
     - [x] Optimized Inputs for Desktop (Pointer Lock) and Mobile (Touch Targets).
     - [x] Implemented Pause Menu, Audio Controls, and Settings Overlay.
     - [x] Verified Visuals via Playwright Screenshots (`landing`, `hud`, `settings`).
+- [x] Narrative Enrichment (UX Strategy)
+    - [x] Diagnosed "Minimalist Sterility" gap.
+    - [x] Implemented Zone Subtitles ("Narrative Anchoring") in `ZoneManager` and UI.
+    - [x] Implemented Field Notes ("Discovery Nodes") via `FieldNoteSystem` with proximity triggers.
+    - [x] Implemented dynamic note placement using Raycasting to ensure grounded context.
+    - [x] Updated `TundraZone` with sample narrative content.
 
 ## In Progress
 

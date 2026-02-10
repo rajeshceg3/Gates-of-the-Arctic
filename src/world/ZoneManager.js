@@ -1,14 +1,22 @@
 import { AtmosphereSystem } from './AtmosphereSystem.js';
 
 class ZoneManager {
-  constructor(scene, camera, audioManager) {
+  constructor(scene, camera, audioManager, fieldNotes) {
     this.scene = scene;
     this.camera = camera;
     this.audioManager = audioManager;
+    this.fieldNotes = fieldNotes;
     this.atmosphere = new AtmosphereSystem(scene);
     this.currentZone = null;
     this.zones = {};
     this.labelTimeout = null;
+    this.subtitles = {
+        'tundra': 'The Frozen Plains',
+        'mountain': 'Peaks of the Elders',
+        'river': 'Veins of the Earth',
+        'forest': 'Whispering Pines',
+        'sky': 'The Celestial Dome'
+    };
   }
 
   register(name, zoneClass) {
@@ -29,12 +37,13 @@ class ZoneManager {
       this.scene.remove(this.currentZone);
       this.currentZone.unload();
       this.currentZone = null;
+      if (this.fieldNotes) this.fieldNotes.clear();
     }
 
     const ZoneClass = this.zones[name];
     if (ZoneClass) {
       const zone = new ZoneClass();
-      await zone.load(this.scene);
+      await zone.load(this.scene, this.fieldNotes);
       this.scene.add(zone);
       this.currentZone = zone;
 
@@ -63,23 +72,32 @@ class ZoneManager {
 
   showLabel(name) {
     const label = document.getElementById('zone-label');
+    const subtitle = document.getElementById('zone-subtitle');
+
     if (label) {
         if (this.labelTimeout) clearTimeout(this.labelTimeout);
 
         label.classList.remove('label-visible');
+        if (subtitle) subtitle.classList.remove('visible');
 
         // Wait for class removal to register
         setTimeout(() => {
             label.textContent = name.toUpperCase();
             label.classList.add('label-visible');
             label.style.setProperty('opacity', '1', 'important');
+
+            if (subtitle) {
+                subtitle.textContent = this.subtitles[name] || '';
+                subtitle.classList.add('visible');
+            }
         }, 50);
 
         // Remove label after a delay
         this.labelTimeout = setTimeout(() => {
             label.classList.remove('label-visible');
             label.style.removeProperty('opacity');
-        }, 5000);
+            if (subtitle) subtitle.classList.remove('visible');
+        }, 10000);
     }
   }
 

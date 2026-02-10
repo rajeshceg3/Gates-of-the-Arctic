@@ -6,8 +6,9 @@ class Zone extends Group {
   }
 
   // To be implemented by subclasses
-  async load() {
+  async load(scene, fieldNotes) {
     console.log('Loading zone...');
+    this.fieldNotes = fieldNotes;
   }
 
   unload() {

@@ -8,8 +8,8 @@ import { GrassSystem } from './GrassSystem.js';
 import { CloudSystem } from './CloudSystem.js';
 
 class TundraZone extends Zone {
-  async load(scene) {
-    await super.load();
+  async load(scene, fieldNotes) {
+    await super.load(scene, fieldNotes);
 
     // Environment
     if (scene) {
@@ -113,6 +113,8 @@ class TundraZone extends Zone {
     };
 
     const { geometry, heightData } = TerrainHelper.generate(size, segments, heightFn, colorFn);
+    geometry.computeBoundingBox(); // Update bounds for raycasting
+    geometry.computeBoundingSphere();
     this.heightData = heightData;
     this.terrainSize = size;
     this.terrainSegments = segments;
@@ -127,6 +129,8 @@ class TundraZone extends Zone {
     terrain.rotation.x = -Math.PI / 2;
     terrain.receiveShadow = true;
     terrain.name = 'terrain';
+    // Ensure matrix is updated for raycasting immediately
+    terrain.updateMatrixWorld();
     this.add(terrain);
 
     // Scattered elements (Rocks)
@@ -212,6 +216,37 @@ class TundraZone extends Zone {
 
     this.add(rocks);
     this.add(pebbles);
+
+    // Field Notes
+    if (fieldNotes) {
+        // Use raycaster to find ground height accurately to match CameraRig physics
+        // Delay slightly to ensure world matrices are fully updated and geometry is ready
+        setTimeout(() => {
+            terrain.updateMatrixWorld(); // Force update before raycast
+            const raycaster = new THREE.Raycaster();
+            const down = new THREE.Vector3(0, -1, 0);
+
+            const addNote = (x, z, text) => {
+                raycaster.set(new THREE.Vector3(x, 1000, z), down);
+                // Intersect terrain only
+                const intersects = raycaster.intersectObject(terrain, false);
+                let h = 0;
+                if (intersects.length > 0) {
+                    h = intersects[0].point.y;
+                } else {
+                    // Fallback to helper if raycast fails
+                    h = TerrainHelper.getHeightAt(x, z, this.heightData, this.terrainSize, this.terrainSegments);
+                }
+                fieldNotes.addNote(new THREE.Vector3(x, h + 1.5, z), text);
+            };
+
+            // Sample notes near spawn
+            addNote(0, -10, "The air is thin and sharp with frost.");
+            addNote(15, 15, "Caribou moss crunching underfoot.");
+            addNote(-20, 5, "Wind-scoured rock, exposed for millennia.");
+            addNote(0, 50, "Silence, unbroken by human machines.");
+        }, 1000);
+    }
   }
 
   tick(delta, camera) {

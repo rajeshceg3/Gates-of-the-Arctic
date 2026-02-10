@@ -12,8 +12,27 @@ class InputController {
 
     // Configuration
     this.lookSensitivity = 0.002;
+    this.paused = false;
 
     this._init();
+  }
+
+  setPaused(isPaused) {
+    this.paused = isPaused;
+    if (isPaused) {
+      // Force hide UI on pause
+      if (this.ui && this.ui.container) {
+        this.ui.container.classList.remove('visible');
+        if (this.ui.ring) this.ui.ring.style.display = 'none';
+        if (this.ui.dot) this.ui.dot.style.display = 'none';
+      }
+      // Reset move keys to prevent stuck movement
+      this.keys.forward = false;
+      this.keys.backward = false;
+      this.keys.left = false;
+      this.keys.right = false;
+      this._updateMove();
+    }
   }
 
   _init() {
@@ -23,7 +42,7 @@ class InputController {
     // Mouse Look (Desktop)
     document.addEventListener('mousemove', (e) => this._onMouseMove(e));
     document.addEventListener('click', () => {
-      document.body.requestPointerLock();
+      if (!this.paused) document.body.requestPointerLock();
     });
 
     // Touch (Mobile)
@@ -43,6 +62,7 @@ class InputController {
   }
 
   _onKeyDown(event) {
+    if (this.paused) return;
     switch (event.code) {
       case 'ArrowUp':
       case 'KeyW': this.keys.forward = true; break;
@@ -76,6 +96,7 @@ class InputController {
   }
 
   _onMouseMove(event) {
+    if (this.paused) return;
     if (document.pointerLockElement === document.body) {
       this.look.x -= event.movementX * this.lookSensitivity;
       this.look.y -= event.movementY * this.lookSensitivity;
@@ -86,6 +107,7 @@ class InputController {
   }
 
   _onTouchStart(event) {
+    if (this.paused) return;
     if (event.touches.length === 1) {
       const x = event.touches[0].clientX;
       const y = event.touches[0].clientY;
@@ -114,6 +136,7 @@ class InputController {
   _onTouchMove(event) {
     // Prevent scrolling
     event.preventDefault();
+    if (this.paused) return;
 
     if (event.touches.length === 1) {
       const touch = event.touches[0];

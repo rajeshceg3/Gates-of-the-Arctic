@@ -1,50 +1,170 @@
+class DroneLayer {
+  constructor(audioManager) {
+    this.audioManager = audioManager;
+    this.osc = null;
+    this.filter = null;
+    this.gain = null;
+    this.lfo = null;
+    this.lfoGain = null;
+    this.baseFreq = 65.41;
+  }
+
+  get context() {
+      return this.audioManager.context;
+  }
+
+  get destination() {
+      return this.audioManager.reverbNode || this.audioManager.masterGain;
+  }
+
+  start(freq) {
+    if (!this.context) return;
+    this.stop();
+    this.baseFreq = freq;
+    const now = this.context.currentTime;
+
+    // Oscillator
+    this.osc = this.context.createOscillator();
+    this.osc.type = 'sawtooth';
+    this.osc.frequency.value = this.baseFreq;
+
+    // Filter
+    this.filter = this.context.createBiquadFilter();
+    this.filter.type = 'lowpass';
+    this.filter.frequency.value = 200;
+    this.filter.Q.value = 1;
+
+    // LFO
+    this.lfo = this.context.createOscillator();
+    this.lfo.type = 'sine';
+    this.lfo.frequency.value = 0.1;
+
+    this.lfoGain = this.context.createGain();
+    this.lfoGain.gain.value = 100;
+
+    this.lfo.connect(this.lfoGain);
+    this.lfoGain.connect(this.filter.frequency);
+
+    // Main Gain
+    this.gain = this.context.createGain();
+    this.gain.gain.setValueAtTime(0, now);
+    this.gain.gain.linearRampToValueAtTime(0.06, now + 4.0); // 0.06 to be subtle
+
+    // Connect
+    this.osc.connect(this.filter);
+    this.filter.connect(this.gain);
+    this.gain.connect(this.destination);
+
+    this.osc.start(now);
+    this.lfo.start(now);
+  }
+
+  stop() {
+    if (this.osc && this.context) {
+      const now = this.context.currentTime;
+      try {
+        this.gain.gain.cancelScheduledValues(now);
+        this.gain.gain.setTargetAtTime(0, now, 0.5);
+        this.osc.stop(now + 2.0);
+        this.lfo.stop(now + 2.0);
+
+        // Cache nodes to disconnect later
+        const nodes = [this.osc, this.lfo, this.filter, this.gain, this.lfoGain];
+        setTimeout(() => {
+            nodes.forEach(n => { try { n.disconnect(); } catch(e){} });
+        }, 2500);
+      } catch (e) { }
+      this.osc = null;
+    }
+  }
+}
+
 class MusicSystem {
   constructor(audioManager) {
     this.audioManager = audioManager;
-    this.context = audioManager.context;
     this.currentScale = [];
     this.nextNoteTime = 0;
     this.active = false;
+    this.drone = new DroneLayer(audioManager);
+  }
+
+  get context() {
+      return this.audioManager.context;
   }
 
   setZone(name) {
     // Scales (freq in Hz)
-    // Tundra: Minor Pentatonic (C, Eb, F, G, Bb) - Cold
-    const tundra = [261.63, 311.13, 349.23, 392.00, 466.16, 523.25];
-    // Mountain: Phrygian (E, F, G, A, B, C, D) - Majestic
-    const mountain = [164.81, 174.61, 196.00, 220.00, 246.94, 261.63, 293.66, 329.63];
-    // River: Dorian (D, E, F, G, A, B, C) - Flowing
-    const river = [293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25];
-    // Forest: Major Pentatonic (G, A, B, D, E) - Organic
-    const forest = [196.00, 220.00, 246.94, 293.66, 329.63, 392.00];
-    // Sky: Lydian (F, G, A, B, C, D, E) - Uplifting
-    const sky = [349.23, 392.00, 440.00, 493.88, 523.25, 587.33, 659.25];
-    // Desert: Double Harmonic (C, Db, E, F, G, Ab, B) - Exotic
-    const desert = [261.63, 277.18, 329.63, 349.23, 392.00, 415.30, 493.88];
-    // Canyon: Mixolydian (G, A, B, C, D, E, F) - Resonant
-    const canyon = [196.00, 220.00, 246.94, 261.63, 293.66, 329.63, 349.23];
+    const tundra = [261.63, 311.13, 349.23, 392.00, 466.16, 523.25]; // C Minor Pent
+    const tundraRoot = 65.41; // C2
+
+    const mountain = [164.81, 174.61, 196.00, 220.00, 246.94, 261.63, 293.66, 329.63]; // E Phrygian
+    const mountainRoot = 82.41; // E2
+
+    const river = [293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25]; // D Dorian
+    const riverRoot = 73.42; // D2
+
+    const forest = [196.00, 220.00, 246.94, 293.66, 329.63, 392.00]; // G Major Pent
+    const forestRoot = 98.00; // G2
+
+    const sky = [349.23, 392.00, 440.00, 493.88, 523.25, 587.33, 659.25]; // F Lydian
+    const skyRoot = 87.31; // F2
+
+    let rootFreq = tundraRoot;
 
     switch (name) {
-      case 'tundra': this.currentScale = tundra; break;
-      case 'mountain': this.currentScale = mountain; break;
-      case 'river': this.currentScale = river; break;
-      case 'forest': this.currentScale = forest; break;
-      case 'sky': this.currentScale = sky; break;
-      case 'desert': this.currentScale = desert; break;
-      case 'canyon': this.currentScale = canyon; break;
-      default: this.currentScale = forest; break;
+      case 'tundra':
+          this.currentScale = tundra;
+          rootFreq = tundraRoot;
+          break;
+      case 'mountain':
+          this.currentScale = mountain;
+          rootFreq = mountainRoot;
+          break;
+      case 'river':
+          this.currentScale = river;
+          rootFreq = riverRoot;
+          break;
+      case 'forest':
+          this.currentScale = forest;
+          rootFreq = forestRoot;
+          break;
+      case 'sky':
+          this.currentScale = sky;
+          rootFreq = skyRoot;
+          break;
+      default:
+          this.currentScale = forest;
+          rootFreq = forestRoot;
+          break;
     }
 
     this.active = true;
-    this.nextNoteTime = this.context.currentTime + 2.0; // Start after delay
+
+    // Only schedule next note if not already running (or if context just started)
+    if (this.context && this.nextNoteTime < this.context.currentTime) {
+        this.nextNoteTime = this.context.currentTime + 2.0;
+    }
+
+    // Update Drone
+    if (this.context) {
+        this.drone.start(rootFreq);
+    }
   }
 
   tick(delta) {
     if (!this.active || !this.context) return;
 
+    // If drone isn't playing but should be (e.g. context just resumed)
+    if (!this.drone.osc && this.active) {
+        // We'd need to know the current root freq to restart it...
+        // For now, let's just rely on setZone being called or context being ready.
+        // Actually, if context starts late, setZone might have run when context was null.
+        // But AudioManager calls setTheme() inside init(), which calls setZone().
+        // So this should be fine.
+    }
+
     if (this.context.currentTime >= this.nextNoteTime) {
       this.playRandomNote();
-      // Schedule next note randomly between 4 and 10 seconds
       this.nextNoteTime = this.context.currentTime + 4 + Math.random() * 6;
     }
   }
@@ -53,8 +173,16 @@ class MusicSystem {
     if (!this.currentScale.length) return;
 
     const freq = this.currentScale[Math.floor(Math.random() * this.currentScale.length)];
-    // Octave shift occasionally
-    const octave = Math.random() > 0.7 ? 2 : 1;
+    const r = Math.random();
+    let octave = 1;
+    if (r > 0.8) octave = 0.5; // Up octave (freq * 0.5 is DOWN octave? No, 1/2 wavelength? Freq / 2 is down. Freq * 2 is up.)
+    // Wait, freq / octave.
+    // If octave is 2, freq/2 is lower.
+    // If octave is 0.5, freq/0.5 = freq*2 is higher.
+
+    if (r > 0.8) octave = 0.5; // Higher
+    if (r < 0.2) octave = 2;   // Lower
+
     const finalFreq = freq / octave;
 
     const osc = this.context.createOscillator();
@@ -64,20 +192,24 @@ class MusicSystem {
     const gain = this.context.createGain();
     const now = this.context.currentTime;
 
-    // Slow attack, long release (pad-like)
     gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(0.1, now + 2.0);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 8.0);
+    gain.gain.linearRampToValueAtTime(0.08, now + 2.0);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 10.0);
+
+    const panner = this.context.createStereoPanner();
+    panner.pan.value = (Math.random() * 2 - 1) * 0.5;
 
     osc.connect(gain);
-    gain.connect(this.audioManager.reverbNode || this.audioManager.masterGain);
+    gain.connect(panner);
+    panner.connect(this.audioManager.reverbNode || this.audioManager.masterGain);
 
     osc.start(now);
-    osc.stop(now + 8.0);
+    osc.stop(now + 10.0);
   }
 
   stop() {
     this.active = false;
+    this.drone.stop();
   }
 }
 

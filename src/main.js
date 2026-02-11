@@ -126,6 +126,7 @@ async function main() {
   loop.updatables.push(zoneManager);
   loop.updatables.push(audio);
   loop.updatables.push(fieldNotes);
+  loop.updatables.push(input);
 
   loop.start();
 

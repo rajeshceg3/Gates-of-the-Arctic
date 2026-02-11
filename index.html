@@ -14,6 +14,7 @@
     <div id="ui-overlay"></div>
     <!-- Custom Cursor -->
     <div id="cursor" class="hidden"></div>
+    <div id="cursor-follower" class="hidden"></div>
 
     <!-- Landing Screen -->
     <div id="landing-screen">
@@ -48,7 +49,7 @@
           <p>Mouse to Look</p>
         </div>
         <div class="mobile-hint">
-          <p>Drag to Move & Look</p>
+          <p>Left Stick: Move &nbsp;|&nbsp; Right Stick: Look</p>
         </div>
       </div>
 
@@ -72,17 +73,17 @@
               <p>Mouse to Look</p>
             </div>
             <div class="mobile-hint">
-              <p>Drag to Move & Look</p>
+              <p>Left Stick: Move &nbsp;|&nbsp; Right Stick: Look</p>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Mobile Touch Indicator -->
-    <div id="touch-indicator" class="hidden">
-      <div class="ring"></div>
-      <div class="dot"></div>
+    <!-- Mobile Touch Indicators -->
+    <div id="touch-overlay">
+      <div id="touch-left" class="touch-feedback hidden"><div class="ring"></div><div class="dot"></div></div>
+      <div id="touch-right" class="touch-feedback hidden"><div class="ring"></div><div class="dot"></div></div>
     </div>
     <div id="grain-overlay"></div>
     <script type="module" src="./src/main.js"></script>

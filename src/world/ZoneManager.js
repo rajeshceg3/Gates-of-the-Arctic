@@ -84,7 +84,7 @@ class ZoneManager {
         setTimeout(() => {
             label.textContent = name.toUpperCase();
             label.classList.add('label-visible');
-            label.style.setProperty('opacity', '1', 'important');
+            // Opacity is handled by CSS animation
 
             if (subtitle) {
                 subtitle.textContent = this.subtitles[name] || '';
@@ -95,7 +95,6 @@ class ZoneManager {
         // Remove label after a delay
         this.labelTimeout = setTimeout(() => {
             label.classList.remove('label-visible');
-            label.style.removeProperty('opacity');
             if (subtitle) subtitle.classList.remove('visible');
         }, 10000);
     }

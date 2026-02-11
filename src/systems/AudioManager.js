@@ -120,6 +120,11 @@ class AudioManager {
 
     // Legacy/Extra Ambience layers (Water, Birds)
     switch (name) {
+      case 'tundra':
+        this._startRandomEvent(() => this._playAmbience('ice'), 15000, 30000);
+        this._startRandomEvent(() => this._playAmbience('wind-gust'), 20000, 45000);
+        break;
+
       case 'mountain':
         this._startRandomEvent(() => this._playBird('eagle'), 8000, 20000);
         break;
@@ -218,6 +223,58 @@ class AudioManager {
 
     source.start(0);
     this.activeNodes.push({ source, nodes: [filter, gainNode] });
+  }
+
+  _playAmbience(type) {
+    if (this.context.state !== 'running') return;
+
+    const now = this.context.currentTime;
+    const gain = this.context.createGain();
+    gain.connect(this.reverbNode || this.masterGain);
+
+    if (type === 'ice') {
+      // Sharp, high-pitched crackle simulating shifting ice
+      const osc = this.context.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(2000 + Math.random() * 1000, now);
+      osc.frequency.exponentialRampToValueAtTime(500, now + 0.1);
+
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.04, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+      osc.connect(gain);
+      osc.start(now);
+      osc.stop(now + 0.2);
+
+    } else if (type === 'wind-gust') {
+      // Filtered noise sweep for sudden gusts
+      const buffer = this._createBuffer('pink');
+      const source = this.context.createBufferSource();
+      source.buffer = buffer;
+
+      const filter = this.context.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.Q.value = 1.0;
+      filter.frequency.setValueAtTime(300, now);
+      filter.frequency.linearRampToValueAtTime(600, now + 2.0);
+      filter.frequency.linearRampToValueAtTime(200, now + 5.0);
+
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.15, now + 2.0);
+      gain.gain.linearRampToValueAtTime(0, now + 5.0);
+
+      const panner = this.context.createStereoPanner();
+      panner.pan.value = (Math.random() * 2 - 1);
+
+      source.connect(filter);
+      filter.connect(gain);
+      gain.connect(panner);
+      panner.connect(this.reverbNode || this.masterGain);
+
+      source.start(now);
+      source.stop(now + 5.5);
+    }
   }
 
   _playBird(type) {

@@ -11,11 +11,11 @@ class ZoneManager {
     this.zones = {};
     this.labelTimeout = null;
     this.subtitles = {
-        'tundra': 'The Frozen Plains',
-        'mountain': 'Peaks of the Elders',
-        'river': 'Veins of the Earth',
-        'forest': 'Whispering Pines',
-        'sky': 'The Celestial Dome'
+        'tundra': 'The Frozen Plains - Where silence has weight.',
+        'mountain': 'Peaks of the Elders - Stone bones of the earth.',
+        'river': 'Veins of the Earth - Cold water, ancient paths.',
+        'forest': 'Whispering Pines - Shadows that breathe.',
+        'sky': 'The Celestial Dome - Infinite and indifferent.'
     };
   }
 

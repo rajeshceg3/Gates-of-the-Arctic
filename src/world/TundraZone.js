@@ -240,11 +240,16 @@ class TundraZone extends Zone {
                 fieldNotes.addNote(new THREE.Vector3(x, h + 1.5, z), text);
             };
 
-            // Sample notes near spawn
-            addNote(0, -10, "The air is thin and sharp with frost.");
-            addNote(15, 15, "Caribou moss crunching underfoot.");
-            addNote(-20, 5, "Wind-scoured rock, exposed for millennia.");
-            addNote(0, 50, "Silence, unbroken by human machines.");
+            // Narrative Anchors - Gates of the Arctic
+            addNote(0, -10, "The air is thin, sharp with frost. This is the edge of the world.");
+            addNote(25, 25, "Caribou moss (Cladonia rangiferina) - a lifeline in the white.");
+            addNote(-30, 10, "Granite spines of the Arrigetch Peaks pierce the distant sky.");
+            addNote(10, 60, "Silence here is not empty. It is a presence.");
+            addNote(-15, -40, "Ancient paths. The Gwich'in people have walked this land for ten thousand years.");
+            addNote(40, -20, "Dryas flowers tracking the sun, survivors of the ice age.");
+            addNote(-50, 50, "A shift in the wind. The scent of snow and deep time.");
+            addNote(60, 10, "No trails. No roads. Only the wild.");
+            addNote(5, -80, "Diamond dust glitters in the air - suspended ice crystals.");
         }, 1000);
     }
   }

@@ -14,6 +14,9 @@ class InputController {
     this.lookSensitivity = 0.002;
     this.paused = false;
 
+    // Custom Cursor
+    this.cursor = document.getElementById('cursor');
+
     this._init();
   }
 
@@ -40,7 +43,34 @@ class InputController {
     document.addEventListener('keyup', (e) => this._onKeyUp(e));
 
     // Mouse Look (Desktop)
-    document.addEventListener('mousemove', (e) => this._onMouseMove(e));
+    document.addEventListener('mousemove', (e) => {
+      this._onMouseMove(e);
+      // Update custom cursor
+      if (this.cursor && document.pointerLockElement !== document.body) {
+        this.cursor.classList.remove('hidden');
+        // Use translate3d for GPU acceleration, include -50% to center
+        this.cursor.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0) translate(-50%, -50%)`;
+      }
+    });
+
+    // Hide cursor on pointer lock
+    document.addEventListener('pointerlockchange', () => {
+      if (this.cursor) {
+        if (document.pointerLockElement === document.body) {
+          this.cursor.classList.add('hidden');
+        } else {
+          this.cursor.classList.remove('hidden');
+        }
+      }
+    });
+
+    // Hover effects for buttons
+    const buttons = document.querySelectorAll('button, #settings-btn');
+    buttons.forEach(btn => {
+      btn.addEventListener('mouseenter', () => this.cursor && this.cursor.classList.add('active'));
+      btn.addEventListener('mouseleave', () => this.cursor && this.cursor.classList.remove('active'));
+    });
+
     document.addEventListener('click', () => {
       if (!this.paused) document.body.requestPointerLock();
     });
@@ -177,12 +207,14 @@ class InputController {
       if (this.ui.dot) {
           this.ui.dot.style.left = touch.clientX + 'px';
           this.ui.dot.style.top = touch.clientY + 'px';
+          this.ui.dot.style.transform = 'translate(-50%, -50%) scale(1.2)';
       }
     }
   }
 
   _onTouchEnd(event) {
     this.move.z = 0;
+    if (this.ui.dot) this.ui.dot.style.transform = 'translate(-50%, -50%) scale(1)';
 
     // Hide UI
     if (this.ui.container) {

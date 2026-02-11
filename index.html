@@ -10,6 +10,11 @@
     <link rel="stylesheet" href="./src/style.css" />
   </head>
   <body>
+    <!-- UI Overlay for Vignette -->
+    <div id="ui-overlay"></div>
+    <!-- Custom Cursor -->
+    <div id="cursor" class="hidden"></div>
+
     <!-- Landing Screen -->
     <div id="landing-screen">
       <div class="content">
@@ -39,7 +44,7 @@
       <!-- Controls Hint (Bottom Left/Right) -->
       <div id="controls-hint">
         <div class="desktop-hint">
-          <p>WASD / Arrows to Move</p>
+          <p><span class="key">WASD</span> / <span class="key">Arrows</span> to Move</p>
           <p>Mouse to Look</p>
         </div>
         <div class="mobile-hint">

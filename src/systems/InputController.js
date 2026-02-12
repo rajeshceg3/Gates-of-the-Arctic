@@ -14,20 +14,55 @@ class InputController {
     this.lookSensitivity = 0.002;
     this.paused = false;
 
+    // Mobile Look Velocity (Joystick Rate)
+    this.lookVelocity = { x: 0, y: 0 };
+
     // Custom Cursor
     this.cursor = document.getElementById('cursor');
+    this.cursorFollower = document.getElementById('cursor-follower');
+    this.mousePos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    this.followerPos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
 
     this._init();
+  }
+
+  tick(delta) {
+    if (this.paused) return;
+
+    // 1. Integrate Mobile Look Velocity
+    if (this.lookVelocity.x !== 0 || this.lookVelocity.y !== 0) {
+      this.look.x -= this.lookVelocity.x * delta;
+      this.look.y -= this.lookVelocity.y * delta;
+
+      // Clamp pitch
+      this.look.y = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.look.y));
+    }
+
+    // 2. Cursor Follower Lerp (Desktop)
+    if (this.cursorFollower && !('ontouchstart' in window)) {
+        // Smooth lerp factor
+        const lerpFactor = 10.0 * delta;
+        this.followerPos.x += (this.mousePos.x - this.followerPos.x) * lerpFactor;
+        this.followerPos.y += (this.mousePos.y - this.followerPos.y) * lerpFactor;
+
+        this.cursorFollower.style.transform = `translate3d(${this.followerPos.x}px, ${this.followerPos.y}px, 0) translate(-50%, -50%)`;
+
+        // Hide follower if pointer locked or generic hidden
+        if (document.pointerLockElement === document.body || this.cursor.classList.contains('hidden')) {
+            this.cursorFollower.style.opacity = '0';
+        } else {
+            this.cursorFollower.style.opacity = '1';
+        }
+    }
   }
 
   setPaused(isPaused) {
     this.paused = isPaused;
     if (isPaused) {
       // Force hide UI on pause
-      if (this.ui && this.ui.container) {
-        this.ui.container.classList.remove('visible');
-        if (this.ui.ring) this.ui.ring.style.display = 'none';
-        if (this.ui.dot) this.ui.dot.style.display = 'none';
+      if (this.ui) {
+        if (this.ui.left && this.ui.left.container) this.ui.left.container.classList.remove('visible');
+        if (this.ui.right && this.ui.right.container) this.ui.right.container.classList.remove('visible');
       }
       // Reset move keys to prevent stuck movement
       this.keys.forward = false;
@@ -45,6 +80,9 @@ class InputController {
     // Mouse Look (Desktop)
     document.addEventListener('mousemove', (e) => {
       this._onMouseMove(e);
+      this.mousePos.x = e.clientX;
+      this.mousePos.y = e.clientY;
+
       // Update custom cursor
       if (this.cursor && document.pointerLockElement !== document.body) {
         this.cursor.classList.remove('hidden');
@@ -67,8 +105,14 @@ class InputController {
     // Hover effects for buttons
     const buttons = document.querySelectorAll('button, #settings-btn');
     buttons.forEach(btn => {
-      btn.addEventListener('mouseenter', () => this.cursor && this.cursor.classList.add('active'));
-      btn.addEventListener('mouseleave', () => this.cursor && this.cursor.classList.remove('active'));
+      btn.addEventListener('mouseenter', () => {
+        if(this.cursor) this.cursor.classList.add('active');
+        if(this.cursorFollower) this.cursorFollower.classList.add('active');
+      });
+      btn.addEventListener('mouseleave', () => {
+        if(this.cursor) this.cursor.classList.remove('active');
+        if(this.cursorFollower) this.cursorFollower.classList.remove('active');
+      });
     });
 
     document.addEventListener('click', () => {
@@ -80,14 +124,20 @@ class InputController {
     document.addEventListener('touchmove', (e) => this._onTouchMove(e), { passive: false });
     document.addEventListener('touchend', (e) => this._onTouchEnd(e));
 
-    this.touchStart = { x: 0, y: 0 };
-    this.touchOriginY = 0;
+    this.touches = new Map(); // identifier -> { startX, startY, type: 'left'|'right' }
 
     // UI Feedback for Touch
     this.ui = {
-      container: document.getElementById('touch-indicator'),
-      ring: document.querySelector('#touch-indicator .ring'),
-      dot: document.querySelector('#touch-indicator .dot')
+      left: {
+        container: document.getElementById('touch-left'),
+        ring: document.querySelector('#touch-left .ring'),
+        dot: document.querySelector('#touch-left .dot')
+      },
+      right: {
+        container: document.getElementById('touch-right'),
+        ring: document.querySelector('#touch-right .ring'),
+        dot: document.querySelector('#touch-right .dot')
+      }
     };
   }
 
@@ -138,90 +188,110 @@ class InputController {
 
   _onTouchStart(event) {
     if (this.paused) return;
-    if (event.touches.length === 1) {
-      const x = event.touches[0].clientX;
-      const y = event.touches[0].clientY;
 
-      this.touchStart.x = x;
-      this.touchStart.y = y;
-      this.touchOriginY = y;
+    for (let i = 0; i < event.changedTouches.length; i++) {
+        const touch = event.changedTouches[i];
+        const halfWidth = window.innerWidth / 2;
+        const type = touch.clientX < halfWidth ? 'left' : 'right';
 
-      // Show UI
-      if (this.ui.container) {
-        this.ui.container.classList.add('visible');
-        if (this.ui.ring) {
-            this.ui.ring.style.display = 'block';
-            this.ui.ring.style.left = x + 'px';
-            this.ui.ring.style.top = y + 'px';
+        this.touches.set(touch.identifier, {
+            startX: touch.clientX,
+            startY: touch.clientY,
+            type: type
+        });
+
+        // UI Feedback
+        const ui = type === 'left' ? this.ui.left : this.ui.right;
+        if (ui && ui.container) {
+            ui.container.classList.remove('hidden');
+            // Force reflow
+            void ui.container.offsetWidth;
+            ui.container.classList.add('visible');
+            ui.container.style.left = touch.clientX + 'px';
+            ui.container.style.top = touch.clientY + 'px';
+            // Reset dot
+            if (ui.dot) ui.dot.style.transform = `translate(-50%, -50%)`;
         }
-        if (this.ui.dot) {
-            this.ui.dot.style.display = 'block';
-            this.ui.dot.style.left = x + 'px';
-            this.ui.dot.style.top = y + 'px';
-        }
-      }
     }
   }
 
   _onTouchMove(event) {
-    // Prevent scrolling
-    event.preventDefault();
+    event.preventDefault(); // Prevent scrolling
     if (this.paused) return;
 
-    if (event.touches.length === 1) {
-      const touch = event.touches[0];
-      const deltaX = touch.clientX - this.touchStart.x;
+    for (let i = 0; i < event.changedTouches.length; i++) {
+        const touch = event.changedTouches[i];
+        const data = this.touches.get(touch.identifier);
 
-      // Calculate vertical delta from ORIGIN for movement (accumulated drag)
-      const deltaY = touch.clientY - this.touchOriginY;
+        if (data) {
+            const deltaX = touch.clientX - data.startX;
+            const deltaY = touch.clientY - data.startY;
+            const maxDrag = 100; // Pixels for full speed
 
-      // Update look based on incremental horizontal drag
-      this.look.x -= deltaX * this.lookSensitivity * 2;
+            // UI Feedback
+            const ui = data.type === 'left' ? this.ui.left : this.ui.right;
+            if (ui && ui.dot) {
+                // Clamp dot movement to ring radius approx (50px radius for 100px ring)
+                const maxDist = 50;
+                const dist = Math.sqrt(deltaX*deltaX + deltaY*deltaY);
+                let moveX = deltaX;
+                let moveY = deltaY;
+                if (dist > maxDist) {
+                    moveX = (deltaX / dist) * maxDist;
+                    moveY = (deltaY / dist) * maxDist;
+                }
+                ui.dot.style.transform = `translate(calc(-50% + ${moveX}px), calc(-50% + ${moveY}px))`;
+            }
 
-      // Accumulated vertical drag for movement
-      // Map deltaY to speed (-1 to 1) with deadzone
-      const threshold = 30; // Deadzone in pixels
-      const maxDrag = 150; // Pixels for full speed
+            if (data.type === 'left') {
+                // Move Joystick
+                // Normalize -1 to 1
+                const x = Math.max(-1, Math.min(1, deltaX / maxDrag));
+                const z = Math.max(-1, Math.min(1, deltaY / maxDrag));
 
-      if (Math.abs(deltaY) < threshold) {
-        this.move.z = 0;
-      } else {
-        // Normalize speed (0 to 1)
-        let speed = (Math.abs(deltaY) - threshold) / (maxDrag - threshold);
-        speed = Math.min(speed, 1.0);
+                this.move.x = x;
+                this.move.z = -z;
 
-        // Direction: Drag Up (negative deltaY) -> Forward (+z for CameraRig logic)
-        // Drag Down (positive deltaY) -> Backward (-z)
-        if (deltaY < 0) {
-            this.move.z = speed;
-        } else {
-            this.move.z = -speed;
+            } else if (data.type === 'right') {
+                // Look Joystick (Rate)
+                const sensitivity = 2.0;
+
+                // Normalize -1 to 1
+                const x = Math.max(-1, Math.min(1, deltaX / maxDrag));
+                const y = Math.max(-1, Math.min(1, deltaY / maxDrag));
+
+                // Drag Right (Positive X) -> Turn Right (Negative Rotation usually)
+                this.lookVelocity.x = x * sensitivity;
+
+                // Drag Down (Positive Y) -> Look Down (Negative Pitch)
+                this.lookVelocity.y = y * sensitivity;
+            }
         }
-      }
-
-      // Update touchStart for incremental look calculation
-      this.touchStart.x = touch.clientX;
-      this.touchStart.y = touch.clientY;
-
-      // Update UI Dot Position
-      if (this.ui.dot) {
-          this.ui.dot.style.left = touch.clientX + 'px';
-          this.ui.dot.style.top = touch.clientY + 'px';
-          this.ui.dot.style.transform = 'translate(-50%, -50%) scale(1.2)';
-      }
     }
   }
 
   _onTouchEnd(event) {
-    this.move.z = 0;
-    if (this.ui.dot) this.ui.dot.style.transform = 'translate(-50%, -50%) scale(1)';
+     for (let i = 0; i < event.changedTouches.length; i++) {
+        const touch = event.changedTouches[i];
+        const data = this.touches.get(touch.identifier);
 
-    // Hide UI
-    if (this.ui.container) {
-        this.ui.container.classList.remove('visible');
-        if (this.ui.ring) this.ui.ring.style.display = 'none';
-        if (this.ui.dot) this.ui.dot.style.display = 'none';
-    }
+        if (data) {
+            if (data.type === 'left') {
+                this.move.x = 0;
+                this.move.z = 0;
+            } else if (data.type === 'right') {
+                this.lookVelocity.x = 0;
+                this.lookVelocity.y = 0;
+            }
+            this.touches.delete(touch.identifier);
+
+            // Hide UI
+            const ui = data.type === 'left' ? this.ui.left : this.ui.right;
+            if (ui && ui.container) {
+                ui.container.classList.remove('visible');
+            }
+        }
+     }
   }
 }
 

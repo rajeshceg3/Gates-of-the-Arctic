@@ -13,8 +13,8 @@ class RiverZone extends Zone {
     this.time = 0;
   }
 
-  async load(scene) {
-    await super.load();
+  async load(scene, fieldNotes) {
+    await super.load(scene, fieldNotes);
 
     // Environment
     if (scene) {
@@ -182,6 +182,24 @@ class RiverZone extends Zone {
     // Initialize Cloud System
     this.cloudSystem = new CloudSystem();
     this.add(this.cloudSystem);
+
+    // Field Notes
+    if (fieldNotes) {
+        setTimeout(() => {
+             if (!this.parent) return; // Prevent race condition if unloaded
+             const addNote = (x, z, text) => {
+                 const h = TerrainHelper.getHeightAt(x, z, this.heightData, this.terrainSize, this.terrainSegments);
+                 // River zone has water at -5.0. If h < -5, float note above water?
+                 let y = Math.max(h, -5.0) + 2.0;
+                 fieldNotes.addNote(new THREE.Vector3(x, y, z), text);
+            };
+
+            addNote(50, 10, "Glacial melt, cold as bone.");
+            addNote(-30, -50, "The river remembers what the stone forgets.");
+            addNote(100, -100, "Life clings to the banks. Tenacious and small.");
+            addNote(-80, 80, "The path of least resistance carved through eons.");
+        }, 1000);
+    }
   }
 
   addRocks(points, minScale, maxScale, colorHex, offset) {

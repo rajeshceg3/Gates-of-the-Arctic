@@ -48,7 +48,7 @@ class DroneLayer {
     // Main Gain
     this.gain = this.context.createGain();
     this.gain.gain.setValueAtTime(0, now);
-    this.gain.gain.linearRampToValueAtTime(0.06, now + 4.0); // 0.06 to be subtle
+    this.gain.gain.linearRampToValueAtTime(0.12, now + 4.0); // Increased for immersion (was 0.06)
 
     // Connect
     this.osc.connect(this.filter);

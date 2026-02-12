@@ -4,10 +4,11 @@ import { noise } from '../utils/Noise.js';
 import { TerrainHelper } from '../utils/TerrainHelper.js';
 import { GrassSystem } from './GrassSystem.js';
 import { CloudSystem } from './CloudSystem.js';
+import { createInukshuk } from '../utils/HeroObjectUtils.js';
 
 class MountainZone extends Zone {
-  async load(scene) {
-    await super.load();
+  async load(scene, fieldNotes) {
+    await super.load(scene, fieldNotes);
 
     // Environment
     if (scene) {
@@ -147,6 +148,31 @@ class MountainZone extends Zone {
     // Initialize Cloud System
     this.cloudSystem = new CloudSystem();
     this.add(this.cloudSystem);
+
+    // Hero Object
+    const inukshuk = createInukshuk();
+    inukshuk.scale.set(5, 5, 5);
+    // Get height at 20, 20
+    const iy = TerrainHelper.getHeightAt(20, 20, this.heightData, this.terrainSize, this.terrainSegments);
+    inukshuk.position.set(20, iy, 20);
+    this.add(inukshuk);
+
+    // Field Notes
+    if (fieldNotes) {
+        setTimeout(() => {
+            if (!this.parent) return; // Prevent race condition if unloaded
+            const addNote = (x, z, text) => {
+                 const h = TerrainHelper.getHeightAt(x, z, this.heightData, this.terrainSize, this.terrainSegments);
+                 fieldNotes.addNote(new THREE.Vector3(x, h + 5.0, z), text);
+            };
+
+            addNote(100, 100, "The spine of the world. Peaks older than memory.");
+            addNote(-50, 200, "Where eagles dare not fly. The air is thin here.");
+            addNote(0, -150, "Stone ancient as time. Listening.");
+            addNote(20, 20, "A marker. Someone stood here before.");
+            addNote(-100, -50, "The silence is not empty. It is waiting.");
+        }, 1000);
+    }
   }
 
   tick(delta, camera) {

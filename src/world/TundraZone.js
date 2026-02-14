@@ -6,6 +6,7 @@ import { PoissonDiskSampling } from '../utils/PoissonDiskSampling.js';
 import { TerrainHelper } from '../utils/TerrainHelper.js';
 import { GrassSystem } from './GrassSystem.js';
 import { CloudSystem } from './CloudSystem.js';
+import { createStandingStones } from '../utils/HeroObjectUtils.js';
 
 class TundraZone extends Zone {
   async load(scene, fieldNotes) {
@@ -216,6 +217,14 @@ class TundraZone extends Zone {
 
     this.add(rocks);
     this.add(pebbles);
+
+    // Hero Object: Standing Stones
+    const stones = createStandingStones();
+    const sx = -15;
+    const sz = -40;
+    const sy = TerrainHelper.getHeightAt(sx, sz, this.heightData, size, segments);
+    stones.position.set(sx, sy, sz);
+    this.add(stones);
 
     // Field Notes
     if (fieldNotes) {

@@ -56,3 +56,43 @@ export function createInukshuk() {
 
     return group;
 }
+
+export function createStandingStones() {
+    const group = new THREE.Group();
+    const material = new THREE.MeshStandardMaterial({
+        color: 0x555555,
+        roughness: 0.9,
+        flatShading: true
+    });
+
+    const count = 5 + Math.floor(Math.random() * 3); // 5 to 7 stones
+    const radius = 5;
+
+    for (let i = 0; i < count; i++) {
+        const angle = (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.5; // Jitter angle
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
+
+        // Tall stone geometry
+        let geo = new THREE.BoxGeometry(0.8 + Math.random() * 0.4, 3.5 + Math.random() * 1.5, 0.8 + Math.random() * 0.4);
+        geo = distortGeometry(geo, 1, 0.2); // Heavy distortion for ancient look
+
+        const stone = new THREE.Mesh(geo, material);
+
+        // Position on circle
+        // Height is roughly 3.5 to 5. Center is at half height (approx 2).
+        // Push it down a bit so it's buried (y=1.5).
+        stone.position.set(x, 1.5, z);
+
+        // Rotate randomly
+        stone.rotation.y = Math.random() * Math.PI * 2;
+        stone.rotation.x = (Math.random() - 0.5) * 0.2; // Slight tilt
+        stone.rotation.z = (Math.random() - 0.5) * 0.2;
+
+        stone.castShadow = true;
+        stone.receiveShadow = true;
+        group.add(stone);
+    }
+
+    return group;
+}

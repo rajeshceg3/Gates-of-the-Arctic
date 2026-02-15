@@ -161,6 +161,9 @@ class WindSystem {
         if (n.panner) n.panner.disconnect();
     });
     this.nodes = [];
+    this.lowWind = null;
+    this.midWind = null;
+    this.highWind = null;
   }
 }
 

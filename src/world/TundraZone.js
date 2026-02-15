@@ -6,7 +6,7 @@ import { PoissonDiskSampling } from '../utils/PoissonDiskSampling.js';
 import { TerrainHelper } from '../utils/TerrainHelper.js';
 import { GrassSystem } from './GrassSystem.js';
 import { CloudSystem } from './CloudSystem.js';
-import { createStandingStones } from '../utils/HeroObjectUtils.js';
+import { createStandingStones, createInukshuk } from '../utils/HeroObjectUtils.js';
 
 class TundraZone extends Zone {
   async load(scene, fieldNotes) {
@@ -226,6 +226,16 @@ class TundraZone extends Zone {
     stones.position.set(sx, sy, sz);
     this.add(stones);
 
+    // Hero Object: Inukshuk (Sensory Anchor)
+    const inukshuk = createInukshuk();
+    const ix = 35;
+    const iz = -55;
+    const iy = TerrainHelper.getHeightAt(ix, iz, this.heightData, size, segments);
+    inukshuk.position.set(ix, iy, iz);
+    // Rotate to face roughly towards the origin/center
+    inukshuk.lookAt(0, iy, 0);
+    this.add(inukshuk);
+
     // Field Notes
     if (fieldNotes) {
         // Use raycaster to find ground height accurately to match CameraRig physics
@@ -252,6 +262,7 @@ class TundraZone extends Zone {
             // Narrative Anchors - Gates of the Arctic
             addNote(0, -10, "The air is thin, sharp with frost. This is the edge of the world.");
             addNote(25, 25, "Caribou moss (Cladonia rangiferina) - a lifeline in the white.");
+            addNote(35, -55, "An Inukshuk stands watch. A guide for safe passage in the whiteout.");
             addNote(-30, 10, "Granite spines of the Arrigetch Peaks pierce the distant sky.");
             addNote(10, 60, "Silence here is not empty. It is a presence.");
             addNote(-15, -40, "Ancient paths. The Gwich'in people have walked this land for ten thousand years.");

@@ -6,7 +6,7 @@ import { PoissonDiskSampling } from '../utils/PoissonDiskSampling.js';
 import { TerrainHelper } from '../utils/TerrainHelper.js';
 import { GrassSystem } from './GrassSystem.js';
 import { CloudSystem } from './CloudSystem.js';
-import { createStandingStones } from '../utils/HeroObjectUtils.js';
+import { createStandingStones, createInukshuk } from '../utils/HeroObjectUtils.js';
 
 class TundraZone extends Zone {
   async load(scene, fieldNotes) {
@@ -225,6 +225,15 @@ class TundraZone extends Zone {
     const sy = TerrainHelper.getHeightAt(sx, sz, this.heightData, size, segments);
     stones.position.set(sx, sy, sz);
     this.add(stones);
+
+    // Hero Object: Inukshuk (Sensory Anchor)
+    const inukshuk = createInukshuk();
+    const ix = 0;
+    const iz = -30;
+    const iy = TerrainHelper.getHeightAt(ix, iz, this.heightData, size, segments);
+    inukshuk.position.set(ix, iy, iz);
+    inukshuk.lookAt(0, iy, 0); // Face towards center/start
+    this.add(inukshuk);
 
     // Field Notes
     if (fieldNotes) {

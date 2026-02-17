@@ -7,10 +7,11 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { TerrainHelper } from '../utils/TerrainHelper.js';
 import { GrassSystem } from './GrassSystem.js';
 import { CloudSystem } from './CloudSystem.js';
+import { createStandingStones } from '../utils/HeroObjectUtils.js';
 
 class ForestZone extends Zone {
-  async load(scene) {
-    await super.load();
+  async load(scene, fieldNotes) {
+    await super.load(scene, fieldNotes);
 
     // Environment
     if (scene) {
@@ -227,6 +228,30 @@ class ForestZone extends Zone {
     // Initialize Cloud System
     this.cloudSystem = new CloudSystem();
     this.add(this.cloudSystem);
+
+    // Hero Object: Standing Stones (Druid Circle)
+    const stones = createStandingStones();
+    const sx = 20;
+    const sz = -30;
+    const sy = TerrainHelper.getHeightAt(sx, sz, this.heightData, this.terrainSize, this.terrainSegments);
+    stones.position.set(sx, sy, sz);
+    this.add(stones);
+
+    // Field Notes
+    if (fieldNotes) {
+        setTimeout(() => {
+             if (!this.parent) return;
+             const addNote = (x, z, text) => {
+                 const h = TerrainHelper.getHeightAt(x, z, this.heightData, this.terrainSize, this.terrainSegments);
+                 fieldNotes.addNote(new THREE.Vector3(x, h + 2.0, z), text);
+            };
+
+            addNote(20, -30, "The Old Ones watch. Stones raised by forgotten hands.");
+            addNote(50, 50, "A hush falls. The trees are listening.");
+            addNote(-40, 10, "Tracks in the moss. Wolf? Or something older?");
+            addNote(0, 0, "Breathing the green air. Life persists.");
+        }, 1000);
+    }
   }
 
   createTreeGeometry(seed) {

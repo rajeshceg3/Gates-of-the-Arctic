@@ -92,10 +92,10 @@ class AtmosphereSystem {
     const sprite = this.createDiamondDustTexture();
 
     this.dustMat = new THREE.PointsMaterial({
-      size: 0.15, // Smaller
+      size: 0.25, // Increased for visibility
       map: sprite,
       transparent: true,
-      opacity: 0.6,
+      opacity: 0.8, // Increased for visibility
       vertexColors: false,
       color: 0xaaccff, // Icy tint
       sizeAttenuation: true,
@@ -164,7 +164,7 @@ class AtmosphereSystem {
         // Heavy snow + Diamond dust
         this.snowMat.opacity = 0.8;
         this.snowMat.visible = true;
-        this.dustMat.opacity = 0.6;
+        this.dustMat.opacity = 0.8; // Increased for visibility
         this.dustMat.visible = true;
         this.dustMat.color.setHex(0xaaccff); // Ice blue
         break;

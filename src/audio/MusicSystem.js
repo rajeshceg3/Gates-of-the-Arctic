@@ -23,24 +23,30 @@ class DroneLayer {
     this.baseFreq = freq;
     const now = this.context.currentTime;
 
-    // Oscillator
+    // Oscillator 1 (Base)
     this.osc = this.context.createOscillator();
     this.osc.type = 'sawtooth';
     this.osc.frequency.value = this.baseFreq;
 
+    // Oscillator 2 (Detuned for Binaural Beat / Thickness)
+    this.osc2 = this.context.createOscillator();
+    this.osc2.type = 'sawtooth';
+    this.osc2.frequency.value = this.baseFreq;
+    this.osc2.detune.value = 4; // 4 cents detune for slow beating
+
     // Filter
     this.filter = this.context.createBiquadFilter();
     this.filter.type = 'lowpass';
-    this.filter.frequency.value = 200;
+    this.filter.frequency.value = 180; // Slightly lower for warmth
     this.filter.Q.value = 1;
 
     // LFO
     this.lfo = this.context.createOscillator();
     this.lfo.type = 'sine';
-    this.lfo.frequency.value = 0.1;
+    this.lfo.frequency.value = 0.05; // Slower modulation (20s cycle)
 
     this.lfoGain = this.context.createGain();
-    this.lfoGain.gain.value = 100;
+    this.lfoGain.gain.value = 80;
 
     this.lfo.connect(this.lfoGain);
     this.lfoGain.connect(this.filter.frequency);
@@ -48,14 +54,16 @@ class DroneLayer {
     // Main Gain
     this.gain = this.context.createGain();
     this.gain.gain.setValueAtTime(0, now);
-    this.gain.gain.linearRampToValueAtTime(0.12, now + 4.0); // Increased for immersion (was 0.06)
+    this.gain.gain.linearRampToValueAtTime(0.1, now + 4.0);
 
     // Connect
     this.osc.connect(this.filter);
+    this.osc2.connect(this.filter); // Mix both into filter
     this.filter.connect(this.gain);
     this.gain.connect(this.destination);
 
     this.osc.start(now);
+    this.osc2.start(now);
     this.lfo.start(now);
   }
 
@@ -66,15 +74,17 @@ class DroneLayer {
         this.gain.gain.cancelScheduledValues(now);
         this.gain.gain.setTargetAtTime(0, now, 0.5);
         this.osc.stop(now + 2.0);
+        if (this.osc2) this.osc2.stop(now + 2.0);
         this.lfo.stop(now + 2.0);
 
         // Cache nodes to disconnect later
-        const nodes = [this.osc, this.lfo, this.filter, this.gain, this.lfoGain];
+        const nodes = [this.osc, this.osc2, this.lfo, this.filter, this.gain, this.lfoGain];
         setTimeout(() => {
-            nodes.forEach(n => { try { n.disconnect(); } catch(e){} });
+            nodes.forEach(n => { try { if (n) n.disconnect(); } catch(e){} });
         }, 2500);
       } catch (e) { }
       this.osc = null;
+      this.osc2 = null;
     }
   }
 }

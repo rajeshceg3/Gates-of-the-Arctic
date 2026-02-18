@@ -6,6 +6,7 @@ import { PoissonDiskSampling } from '../utils/PoissonDiskSampling.js';
 import { TerrainHelper } from '../utils/TerrainHelper.js';
 import { GrassSystem } from './GrassSystem.js';
 import { CloudSystem } from './CloudSystem.js';
+import { createDriftwood } from '../utils/HeroObjectUtils.js';
 
 class RiverZone extends Zone {
   constructor() {
@@ -183,6 +184,14 @@ class RiverZone extends Zone {
     this.cloudSystem = new CloudSystem();
     this.add(this.cloudSystem);
 
+    // Hero Object: Driftwood
+    const driftwood = createDriftwood();
+    const dx = 180;
+    const dz = 80;
+    const dy = TerrainHelper.getHeightAt(dx, dz, this.heightData, this.terrainSize, this.terrainSegments);
+    driftwood.position.set(dx, dy, dz);
+    this.add(driftwood);
+
     // Field Notes
     if (fieldNotes) {
         setTimeout(() => {
@@ -198,6 +207,7 @@ class RiverZone extends Zone {
             addNote(-30, -50, "The river remembers what the stone forgets.");
             addNote(100, -100, "Life clings to the banks. Tenacious and small.");
             addNote(-80, 80, "The path of least resistance carved through eons.");
+            addNote(180, 80, "Wood from the south, carried by the water's memory.");
         }, 1000);
     }
   }

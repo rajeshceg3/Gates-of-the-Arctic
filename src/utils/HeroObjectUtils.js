@@ -96,3 +96,77 @@ export function createStandingStones() {
 
     return group;
 }
+
+export function createCairn() {
+    const group = new THREE.Group();
+    const material = new THREE.MeshStandardMaterial({
+        color: 0x666666,
+        roughness: 0.9,
+        flatShading: true
+    });
+
+    const stones = 3 + Math.floor(Math.random() * 3); // 3-5 stones
+    let currentY = 0;
+    let prevScale = 1.0;
+
+    for (let i = 0; i < stones; i++) {
+        const scale = prevScale * (0.6 + Math.random() * 0.3); // Get smaller
+        const radius = 0.4 * scale;
+
+        let geo = new THREE.IcosahedronGeometry(radius, 0);
+        geo = distortGeometry(geo, 2, 0.15); // Rough distortion
+
+        const stone = new THREE.Mesh(geo, material);
+
+        // Stack logic: Center + slight offset for balance
+        const offsetX = (Math.random() - 0.5) * 0.1 * scale;
+        const offsetZ = (Math.random() - 0.5) * 0.1 * scale;
+
+        stone.position.set(offsetX, currentY + radius * 0.8, offsetZ);
+        stone.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+
+        stone.castShadow = true;
+        stone.receiveShadow = true;
+
+        group.add(stone);
+
+        currentY += radius * 1.4; // Stack up
+        prevScale = scale;
+    }
+
+    return group;
+}
+
+export function createDriftwood() {
+    const group = new THREE.Group();
+    const material = new THREE.MeshStandardMaterial({
+        color: 0xaaccbb, // Bleached / Grey-ish wood
+        roughness: 1.0,
+        flatShading: true
+    });
+
+    const pieces = 2 + Math.floor(Math.random() * 2); // 2-3 pieces
+
+    for (let i = 0; i < pieces; i++) {
+        const length = 2.0 + Math.random() * 2.0;
+        const thickness = 0.15 + Math.random() * 0.1;
+
+        let geo = new THREE.CylinderGeometry(thickness, thickness * 0.7, length, 6);
+        geo = distortGeometry(geo, 4, 0.1); // Twisting/warping
+
+        const wood = new THREE.Mesh(geo, material);
+
+        // Lay flat-ish
+        wood.rotation.z = Math.PI / 2 + (Math.random() - 0.5) * 0.5;
+        wood.rotation.y = Math.random() * Math.PI * 2;
+
+        wood.position.set((Math.random() - 0.5) * 1.0, thickness, (Math.random() - 0.5) * 1.0);
+
+        wood.castShadow = true;
+        wood.receiveShadow = true;
+
+        group.add(wood);
+    }
+
+    return group;
+}

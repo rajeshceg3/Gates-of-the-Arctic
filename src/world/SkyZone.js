@@ -1,10 +1,13 @@
 import { Zone } from './Zone.js';
 import * as THREE from 'three';
 import { noise } from '../utils/Noise.js';
+import { createInukshuk } from '../utils/HeroObjectUtils.js';
 
 class SkyZone extends Zone {
-  async load(scene) {
-    await super.load();
+  async load(scene, fieldNotes) {
+    await super.load(scene, fieldNotes);
+    this.time = 0;
+    this.auroraRibbons = [];
 
     // Environment
     if (scene) {
@@ -72,7 +75,7 @@ class SkyZone extends Zone {
 
     for (let k = 0; k < auroraCount; k++) {
         const width = 2000 + Math.random() * 2000;
-        const ribbonGeo = new THREE.PlaneGeometry(width, 400, 256, 4);
+        const ribbonGeo = new THREE.PlaneGeometry(width, 400, 64, 4);
         const ribbonPos = ribbonGeo.attributes.position;
 
         // Wavy ribbon driven by noise
@@ -103,11 +106,51 @@ class SkyZone extends Zone {
         ribbon.rotation.y = (Math.random()-0.5) * 3.0; // Random yaw
 
         auroraGroup.add(ribbon);
+        this.auroraRibbons.push({ mesh: ribbon, k: k });
     }
     this.add(auroraGroup);
+
+    // Hero Object: Inukshuk
+    const inukshuk = createInukshuk();
+    const ix = 10;
+    const iz = 10;
+    const iy = noise(ix*0.05, iz*0.05) * 1.0;
+    inukshuk.position.set(ix, iy, iz);
+    this.add(inukshuk);
+
+    // Field Notes
+    if (fieldNotes) {
+        setTimeout(() => {
+             if (!this.parent) return;
+             fieldNotes.addNote(new THREE.Vector3(10, 2.0, 10), "A marker in the void. We are not alone.");
+             fieldNotes.addNote(new THREE.Vector3(0, 2.0, -50), "The lights dance. Spirits of the ancestors.");
+             fieldNotes.addNote(new THREE.Vector3(50, 2.0, 50), "Infinite night. Infinite silence.");
+        }, 1000);
+    }
   }
 
   tick(delta, camera) {
+      this.time += delta;
+
+      // Animate Aurora
+      if (this.auroraRibbons) {
+          this.auroraRibbons.forEach(item => {
+              const mesh = item.mesh;
+              const k = item.k;
+              const pos = mesh.geometry.attributes.position;
+
+              for(let i=0; i<pos.count; i++) {
+                  const x = pos.getX(i);
+                  const y = pos.getY(i);
+
+                  // Animate noise offset with time
+                  const z = noise(x * 0.002 + this.time * 0.05, k + y * 0.01) * 100;
+                  pos.setZ(i, z);
+              }
+              pos.needsUpdate = true;
+          });
+      }
+
       if (camera && this.moonLight) {
           const x = camera.position.x;
           const z = camera.position.z;

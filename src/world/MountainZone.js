@@ -4,7 +4,7 @@ import { noise } from '../utils/Noise.js';
 import { TerrainHelper } from '../utils/TerrainHelper.js';
 import { GrassSystem } from './GrassSystem.js';
 import { CloudSystem } from './CloudSystem.js';
-import { createInukshuk } from '../utils/HeroObjectUtils.js';
+import { createInukshuk, createCairn } from '../utils/HeroObjectUtils.js';
 
 class MountainZone extends Zone {
   async load(scene, fieldNotes) {
@@ -157,6 +157,14 @@ class MountainZone extends Zone {
     inukshuk.position.set(20, iy, 20);
     this.add(inukshuk);
 
+    // Hero Object: Cairn
+    const cairn = createCairn();
+    const cx = 50;
+    const cz = 50;
+    const cy = TerrainHelper.getHeightAt(cx, cz, this.heightData, this.terrainSize, this.terrainSegments);
+    cairn.position.set(cx, cy, cz);
+    this.add(cairn);
+
     // Field Notes
     if (fieldNotes) {
         setTimeout(() => {
@@ -170,6 +178,7 @@ class MountainZone extends Zone {
             addNote(-50, 200, "Where eagles dare not fly. The air is thin here.");
             addNote(0, -150, "Stone ancient as time. Listening.");
             addNote(20, 20, "A marker. Someone stood here before.");
+            addNote(50, 50, "Stones piled high. A prayer to the mountain spirits.");
             addNote(-100, -50, "The silence is not empty. It is waiting.");
         }, 1000);
     }

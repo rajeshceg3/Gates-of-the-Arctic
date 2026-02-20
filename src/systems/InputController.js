@@ -8,14 +8,14 @@ class InputController {
       backward: false,
       left: false,
       right: false,
+      jump: false,
+      sprint: false
     };
 
     // Configuration
     this.lookSensitivity = 0.002;
+    this.touchLookSensitivity = 0.004; // Slightly faster for touch
     this.paused = false;
-
-    // Mobile Look Velocity (Joystick Rate)
-    this.lookVelocity = { x: 0, y: 0 };
 
     // Custom Cursor
     this.cursor = document.getElementById('cursor');
@@ -29,14 +29,7 @@ class InputController {
   tick(delta) {
     if (this.paused) return;
 
-    // 1. Integrate Mobile Look Velocity
-    if (this.lookVelocity.x !== 0 || this.lookVelocity.y !== 0) {
-      this.look.x -= this.lookVelocity.x * delta;
-      this.look.y -= this.lookVelocity.y * delta;
-
-      // Clamp pitch
-      this.look.y = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.look.y));
-    }
+    // Note: Touch look is now direct drag, so no velocity integration needed here.
 
     // 2. Cursor Follower Lerp (Desktop)
     if (this.cursorFollower && !('ontouchstart' in window)) {
@@ -69,6 +62,8 @@ class InputController {
       this.keys.backward = false;
       this.keys.left = false;
       this.keys.right = false;
+      this.keys.jump = false;
+      this.keys.sprint = false;
       this._updateMove();
     }
   }
@@ -124,7 +119,7 @@ class InputController {
     document.addEventListener('touchmove', (e) => this._onTouchMove(e), { passive: false });
     document.addEventListener('touchend', (e) => this._onTouchEnd(e));
 
-    this.touches = new Map(); // identifier -> { startX, startY, type: 'left'|'right' }
+    this.touches = new Map(); // identifier -> { startX, startY, lastX, lastY, type: 'left'|'right' }
 
     // UI Feedback for Touch
     this.ui = {
@@ -152,6 +147,9 @@ class InputController {
       case 'KeyS': this.keys.backward = true; break;
       case 'ArrowRight':
       case 'KeyD': this.keys.right = true; break;
+      case 'Space': this.keys.jump = true; break;
+      case 'ShiftLeft':
+      case 'ShiftRight': this.keys.sprint = true; break;
     }
     this._updateMove();
   }
@@ -166,6 +164,9 @@ class InputController {
       case 'KeyS': this.keys.backward = false; break;
       case 'ArrowRight':
       case 'KeyD': this.keys.right = false; break;
+      case 'Space': this.keys.jump = false; break;
+      case 'ShiftLeft':
+      case 'ShiftRight': this.keys.sprint = false; break;
     }
     this._updateMove();
   }
@@ -191,12 +192,15 @@ class InputController {
 
     for (let i = 0; i < event.changedTouches.length; i++) {
         const touch = event.changedTouches[i];
-        const halfWidth = window.innerWidth / 2;
-        const type = touch.clientX < halfWidth ? 'left' : 'right';
+        // Split screen: Left 30% for movement, Right 70% for look
+        const splitX = window.innerWidth * 0.3;
+        const type = touch.clientX < splitX ? 'left' : 'right';
 
         this.touches.set(touch.identifier, {
             startX: touch.clientX,
             startY: touch.clientY,
+            lastX: touch.clientX,
+            lastY: touch.clientY,
             type: type
         });
 
@@ -224,18 +228,27 @@ class InputController {
         const data = this.touches.get(touch.identifier);
 
         if (data) {
+            // Delta for Drag (Right side)
+            const moveDeltaX = touch.clientX - data.lastX;
+            const moveDeltaY = touch.clientY - data.lastY;
+            data.lastX = touch.clientX;
+            data.lastY = touch.clientY;
+
+            // Delta for Joystick (Left side - from start)
             const deltaX = touch.clientX - data.startX;
             const deltaY = touch.clientY - data.startY;
-            const maxDrag = 100; // Pixels for full speed
 
             // UI Feedback
             const ui = data.type === 'left' ? this.ui.left : this.ui.right;
             if (ui && ui.dot) {
-                // Clamp dot movement to ring radius approx (50px radius for 100px ring)
+                // For Left Joystick: Clamp to ring
+                // For Right Drag: Also clamp for visual feedback, though input is unbound
                 const maxDist = 50;
                 const dist = Math.sqrt(deltaX*deltaX + deltaY*deltaY);
                 let moveX = deltaX;
                 let moveY = deltaY;
+
+                // Visual clamping for UI
                 if (dist > maxDist) {
                     moveX = (deltaX / dist) * maxDist;
                     moveY = (deltaY / dist) * maxDist;
@@ -245,7 +258,7 @@ class InputController {
 
             if (data.type === 'left') {
                 // Move Joystick
-                // Normalize -1 to 1
+                const maxDrag = 100;
                 const x = Math.max(-1, Math.min(1, deltaX / maxDrag));
                 const z = Math.max(-1, Math.min(1, deltaY / maxDrag));
 
@@ -253,18 +266,22 @@ class InputController {
                 this.move.z = -z;
 
             } else if (data.type === 'right') {
-                // Look Joystick (Rate)
-                const sensitivity = 2.0;
+                // Drag Look (Direct Delta)
+                // Drag Right (Positive X) -> Turn Right (Negative Yaw usually, but CameraRig adds.
+                // Wait, _onMouseMove uses: look.x -= movementX. So positive movementX (Right) -> subtract -> Look Left?
+                // Standard FPS: Mouse Right -> Rotate Right.
+                // In CameraRig: camera.rotation.y = this.yaw.
+                // If yaw increases, camera rotates left (CCW around Y)?
+                // Three.js: Positive rotation around Y is CCW.
+                // So to turn Right (CW), we need Decreasing Yaw.
+                // So Mouse Right (+X) should Decrease Yaw.
+                // _onMouseMove: look.x -= movementX. Correct.
 
-                // Normalize -1 to 1
-                const x = Math.max(-1, Math.min(1, deltaX / maxDrag));
-                const y = Math.max(-1, Math.min(1, deltaY / maxDrag));
+                this.look.x -= moveDeltaX * this.touchLookSensitivity;
+                this.look.y -= moveDeltaY * this.touchLookSensitivity;
 
-                // Drag Right (Positive X) -> Turn Right (Negative Rotation usually)
-                this.lookVelocity.x = x * sensitivity;
-
-                // Drag Down (Positive Y) -> Look Down (Negative Pitch)
-                this.lookVelocity.y = y * sensitivity;
+                // Clamp pitch
+                this.look.y = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.look.y));
             }
         }
     }
@@ -279,10 +296,9 @@ class InputController {
             if (data.type === 'left') {
                 this.move.x = 0;
                 this.move.z = 0;
-            } else if (data.type === 'right') {
-                this.lookVelocity.x = 0;
-                this.lookVelocity.y = 0;
             }
+            // No need to reset look for Right side as it's not velocity based anymore
+
             this.touches.delete(touch.identifier);
 
             // Hide UI

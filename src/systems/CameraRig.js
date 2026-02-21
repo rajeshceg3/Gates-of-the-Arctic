@@ -18,7 +18,15 @@ class CameraRig {
     this.yaw = 0;
     this.roll = 0;
 
+    // Physics State
     this.currentHeight = 1.7;
+    this.verticalVelocity = 0;
+    this.isGrounded = false;
+
+    // Constants
+    this.JUMP_FORCE = 5.0;
+    this.GRAVITY = -15.0; // Slightly stronger gravity for snappier feel
+    this.SPRINT_MULTIPLIER = 2.5; // Distinct sprint
 
     // Head Bob & Breathing
     this.headBobTimer = 0;
@@ -35,26 +43,18 @@ class CameraRig {
     const targetPitch = this.input.look.y;
     const targetYaw = this.input.look.x;
 
-    // Lerp for smoothness
     const lookSmoothness = 10.0;
-
-    // Calculate delta for roll before updating yaw
     const yawDiff = targetYaw - this.yaw;
 
     this.pitch += (targetPitch - this.pitch) * lookSmoothness * delta;
     this.yaw += yawDiff * lookSmoothness * delta;
 
     // Roll (Bank into turn)
-    // Turning Left (Yaw increasing) -> Roll Left (Positive Z)
-    const targetRoll = yawDiff * 10.0; // Exaggerate slightly for effect
-    // Clamp roll
-    const maxRoll = 0.05; // ~3 degrees
+    const targetRoll = yawDiff * 10.0;
+    const maxRoll = 0.05;
     const clampedRoll = Math.max(-maxRoll, Math.min(maxRoll, targetRoll));
 
     this.roll += (clampedRoll - this.roll) * 5.0 * delta;
-
-    // Organic Sway (Lag behind yaw)
-    // When turning right (yawDiff < 0), head tilts slightly left first due to inertia
     this.sway += (yawDiff * -5.0 - this.sway) * 2.0 * delta;
 
     this.camera.rotation.x = this.pitch;
@@ -64,6 +64,9 @@ class CameraRig {
     // 2. Movement
     const moveForward = this.input.move.z;
     const moveRight = this.input.move.x;
+
+    // Sprint logic
+    const currentMaxSpeed = this.maxSpeed * (this.input.keys.sprint ? this.SPRINT_MULTIPLIER : 1.0);
 
     const forwardDir = new Vector3(0, 0, -1).applyAxisAngle(new Vector3(0, 1, 0), this.yaw);
     const rightDir = new Vector3(1, 0, 0).applyAxisAngle(new Vector3(0, 1, 0), this.yaw);
@@ -76,40 +79,46 @@ class CameraRig {
         targetVelocity.normalize();
     }
 
-    targetVelocity.multiplyScalar(this.maxSpeed);
+    targetVelocity.multiplyScalar(currentMaxSpeed);
 
     this.velocity.lerp(targetVelocity, this.smoothing * delta);
 
     // Update Timers
     const speed = this.velocity.length();
-    // Bob frequency increases with speed
-    this.headBobTimer += delta * 10.0 * (speed / this.maxSpeed);
+    // Only bob if grounded
+    if (this.isGrounded) {
+        this.headBobTimer += delta * 10.0 * (speed / this.maxSpeed);
+    }
     this.breathingTimer += delta * 0.5;
 
     // Calculate Offsets
-    // Bob: Sin wave on Y
-    // Only bob when moving
-    const bobY = Math.sin(this.headBobTimer) * 0.05 * Math.min(speed, 1.0);
-
-    // Breathing: Slow Sin on Y and Z (forward/back drift)
+    const bobY = this.isGrounded ? Math.sin(this.headBobTimer) * 0.05 * Math.min(speed, 1.0) : 0;
     const breathY = Math.sin(this.breathingTimer) * 0.005;
-    // Breathing doesn't affect Z position directly as it fights movement,
-    // better to affect position only when idle?
-    // Let's just do Y for breathing to be safe and simple.
 
     this.camera.position.x += this.velocity.x * delta;
     this.camera.position.z += this.velocity.z * delta;
 
-    // 3. Ground Clamping
+    // 3. Vertical Physics (Jump & Gravity)
+    if (this.input.keys.jump && this.isGrounded) {
+        this.verticalVelocity = this.JUMP_FORCE;
+        this.isGrounded = false;
+    }
+
+    // Apply Gravity
+    this.verticalVelocity += this.GRAVITY * delta;
+
+    // Apply Vertical Velocity to Height (virtual position)
+    this.currentHeight += this.verticalVelocity * delta;
+
+    // 4. Ground Collision
     if (this.scene) {
         const rayOrigin = new Vector3(this.camera.position.x, 1000, this.camera.position.z);
         this.raycaster.ray.origin.copy(rayOrigin);
 
-        // Optimization: In a real app we'd cache the terrain object.
-        // For now, this is acceptable for MVP.
+        // Check for terrain
         const intersects = this.raycaster.intersectObjects(this.scene.children, true);
 
-        let groundHeight = 0;
+        let groundHeight = -1000; // Default low
         let found = false;
 
         for (let i = 0; i < intersects.length; i++) {
@@ -121,22 +130,41 @@ class CameraRig {
         }
 
         if (found) {
-             // Landing Effect detection
-             const drop = this.lastGroundY - groundHeight;
-             if (drop > 0.5) { // Stepped down significantly
-                 this.landingOffset = -0.2 * Math.min(drop, 1.0); // Dip proportional to drop
-             }
-             this.lastGroundY = groundHeight;
+             const targetFloor = groundHeight + 1.7;
 
-             const targetHeight = groundHeight + 1.7;
-             const heightSmoothing = 5.0;
-             this.currentHeight += (targetHeight - this.currentHeight) * heightSmoothing * delta;
+             // Check if we hit the ground while falling
+             if (this.verticalVelocity <= 0 && this.currentHeight <= targetFloor) {
+                 // Land
+                 if (!this.isGrounded && this.verticalVelocity < -2.0) {
+                    this.landingOffset = -0.2 * Math.min(Math.abs(this.verticalVelocity) / 5.0, 1.0);
+                 }
+                 this.currentHeight = targetFloor;
+                 this.verticalVelocity = 0;
+                 this.isGrounded = true;
+             } else {
+                 // We are above target floor
+                 if (this.isGrounded) {
+                     // Sticky feet: if we are close enough, snap down (slope)
+                     // Snap distance = 0.6m
+                     if (this.currentHeight - targetFloor < 0.6) {
+                         this.currentHeight = targetFloor;
+                         this.verticalVelocity = 0;
+                     } else {
+                         // Walked off ledge
+                         this.isGrounded = false;
+                     }
+                 } else {
+                    // Already airborn (jumping or falling)
+                 }
+             }
+        } else {
+            this.isGrounded = false;
         }
 
-        // Recover Landing Offset (Spring back up)
+        // Recover Landing Offset
         this.landingOffset += (0 - this.landingOffset) * 5.0 * delta;
 
-        // Combine all Y modifiers
+        // Final Y Position
         this.camera.position.y = this.currentHeight + bobY + breathY + this.landingOffset;
     }
   }

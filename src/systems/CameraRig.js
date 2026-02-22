@@ -12,7 +12,8 @@ class CameraRig {
     // Physics/Movement params
     this.velocity = new Vector3();
     this.maxSpeed = 1.8; // slow walking speed (1.8m/s)
-    this.smoothing = 2.0; // Lower = more inertia (calm)
+    this.accelerationSmoothing = 2.0; // Lower = more inertia (calm start)
+    this.dampingSmoothing = 4.0; // Higher = quicker stop (responsive)
 
     this.pitch = 0;
     this.yaw = 0;
@@ -81,7 +82,11 @@ class CameraRig {
 
     targetVelocity.multiplyScalar(currentMaxSpeed);
 
-    this.velocity.lerp(targetVelocity, this.smoothing * delta);
+    // Apply different smoothing for starting vs stopping
+    const isStopping = targetVelocity.lengthSq() < 0.001;
+    const smoothFactor = isStopping ? this.dampingSmoothing : this.accelerationSmoothing;
+
+    this.velocity.lerp(targetVelocity, smoothFactor * delta);
 
     // Update Timers
     const speed = this.velocity.length();

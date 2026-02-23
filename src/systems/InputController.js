@@ -259,8 +259,33 @@ class InputController {
             if (data.type === 'left') {
                 // Move Joystick
                 const maxDrag = 100;
-                const x = Math.max(-1, Math.min(1, deltaX / maxDrag));
-                const z = Math.max(-1, Math.min(1, deltaY / maxDrag));
+                let x = deltaX / maxDrag;
+                let z = deltaY / maxDrag;
+
+                // Deadzone and Curve
+                const deadzone = 0.15;
+                const len = Math.sqrt(x*x + z*z);
+
+                if (len < deadzone) {
+                    x = 0;
+                    z = 0;
+                } else {
+                    // Circular clamp
+                    const clampedLen = Math.min(len, 1.0);
+
+                    // Rescale 0..1 to remove deadzone jump
+                    const normalizedLen = (clampedLen - deadzone) / (1.0 - deadzone);
+
+                    // Direction
+                    const dirX = x / len;
+                    const dirZ = z / len;
+
+                    // Apply Quadratic Curve for fine control
+                    const curvedLen = normalizedLen * normalizedLen;
+
+                    x = dirX * curvedLen;
+                    z = dirZ * curvedLen;
+                }
 
                 this.move.x = x;
                 this.move.z = -z;

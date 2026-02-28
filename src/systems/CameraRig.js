@@ -1,5 +1,13 @@
 import { Vector3, Raycaster } from 'three';
 
+const _forwardAxis = new Vector3(0, 0, -1);
+const _rightAxis = new Vector3(1, 0, 0);
+const _upAxis = new Vector3(0, 1, 0);
+const _forwardDir = new Vector3();
+const _rightDir = new Vector3();
+const _targetVelocity = new Vector3();
+const _rayOrigin = new Vector3();
+
 class CameraRig {
   constructor(camera, input, scene) {
     this.camera = camera;
@@ -69,24 +77,24 @@ class CameraRig {
     // Sprint logic
     const currentMaxSpeed = this.maxSpeed * (this.input.keys.sprint ? this.SPRINT_MULTIPLIER : 1.0);
 
-    const forwardDir = new Vector3(0, 0, -1).applyAxisAngle(new Vector3(0, 1, 0), this.yaw);
-    const rightDir = new Vector3(1, 0, 0).applyAxisAngle(new Vector3(0, 1, 0), this.yaw);
+    _forwardDir.copy(_forwardAxis).applyAxisAngle(_upAxis, this.yaw);
+    _rightDir.copy(_rightAxis).applyAxisAngle(_upAxis, this.yaw);
 
-    const targetVelocity = new Vector3();
-    targetVelocity.addScaledVector(forwardDir, moveForward);
-    targetVelocity.addScaledVector(rightDir, moveRight);
+    _targetVelocity.set(0, 0, 0);
+    _targetVelocity.addScaledVector(_forwardDir, moveForward);
+    _targetVelocity.addScaledVector(_rightDir, moveRight);
 
-    if (targetVelocity.lengthSq() > 0) {
-        targetVelocity.normalize();
+    if (_targetVelocity.lengthSq() > 0) {
+        _targetVelocity.normalize();
     }
 
-    targetVelocity.multiplyScalar(currentMaxSpeed);
+    _targetVelocity.multiplyScalar(currentMaxSpeed);
 
     // Apply different smoothing for starting vs stopping
-    const isStopping = targetVelocity.lengthSq() < 0.001;
+    const isStopping = _targetVelocity.lengthSq() < 0.001;
     const smoothFactor = isStopping ? this.dampingSmoothing : this.accelerationSmoothing;
 
-    this.velocity.lerp(targetVelocity, smoothFactor * delta);
+    this.velocity.lerp(_targetVelocity, smoothFactor * delta);
 
     // Update Timers
     const speed = this.velocity.length();
@@ -117,8 +125,8 @@ class CameraRig {
 
     // 4. Ground Collision
     if (this.scene) {
-        const rayOrigin = new Vector3(this.camera.position.x, 1000, this.camera.position.z);
-        this.raycaster.ray.origin.copy(rayOrigin);
+        _rayOrigin.set(this.camera.position.x, 1000, this.camera.position.z);
+        this.raycaster.ray.origin.copy(_rayOrigin);
 
         // Check for terrain
         const intersects = this.raycaster.intersectObjects(this.scene.children, true);

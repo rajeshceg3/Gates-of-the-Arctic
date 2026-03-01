@@ -1,4 +1,5 @@
 import { Vector3, Raycaster } from 'three';
+import { TerrainHelper } from '../utils/TerrainHelper.js';
 
 const _forwardAxis = new Vector3(0, 0, -1);
 const _rightAxis = new Vector3(1, 0, 0);
@@ -9,10 +10,10 @@ const _targetVelocity = new Vector3();
 const _rayOrigin = new Vector3();
 
 class CameraRig {
-  constructor(camera, input, scene) {
+  constructor(camera, input) {
     this.camera = camera;
     this.input = input;
-    this.scene = scene;
+    this.zoneManager = null; // Assigned in main.js
 
     this.raycaster = new Raycaster();
     this.raycaster.ray.direction.set(0, -1, 0);
@@ -124,22 +125,20 @@ class CameraRig {
     this.currentHeight += this.verticalVelocity * delta;
 
     // 4. Ground Collision
-    if (this.scene) {
-        _rayOrigin.set(this.camera.position.x, 1000, this.camera.position.z);
-        this.raycaster.ray.origin.copy(_rayOrigin);
-
-        // Check for terrain
-        const intersects = this.raycaster.intersectObjects(this.scene.children, true);
-
-        let groundHeight = -1000; // Default low
+    if (this.zoneManager && this.zoneManager.currentZone) {
+        const zone = this.zoneManager.currentZone;
         let found = false;
+        let groundHeight = -1000;
 
-        for (let i = 0; i < intersects.length; i++) {
-            if (intersects[i].object.name === 'terrain') {
-                groundHeight = intersects[i].point.y;
-                found = true;
-                break;
-            }
+        if (zone.heightData && zone.terrainSize && zone.terrainSegments) {
+             groundHeight = TerrainHelper.getHeightAt(
+                 this.camera.position.x,
+                 this.camera.position.z,
+                 zone.heightData,
+                 zone.terrainSize,
+                 zone.terrainSegments
+             );
+             found = true;
         }
 
         if (found) {

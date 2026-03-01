@@ -31,10 +31,11 @@ async function main() {
   // Systems
   const loop = new Loop(camera, scene, renderer);
   const input = new InputController();
-  const rig = new CameraRig(camera, input, scene);
+  const rig = new CameraRig(camera, input);
   const audio = new AudioManager(camera);
   const fieldNotes = new FieldNoteSystem(camera);
   const zoneManager = new ZoneManager(scene, camera, audio, fieldNotes);
+  rig.zoneManager = zoneManager;
   const postProcessing = new PostProcessingManager(scene, camera, renderer);
   loop.setRenderCallback(() => postProcessing.render());
 

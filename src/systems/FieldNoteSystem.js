@@ -42,16 +42,18 @@ class FieldNoteSystem {
     }
 
     let nearestNote = null;
-    let minDistance = Infinity;
+    let minDistanceSq = Infinity;
 
     for (const note of this.notes) {
-      const distance = this.camera.position.distanceTo(note.position);
+      const distanceSq = this.camera.position.distanceToSquared(note.position);
 
       // Use a hysteresis: trigger at radius, leave at radius + 5
       const threshold = (this.activeNote === note) ? note.radius + 5 : note.radius;
 
-      if (distance < threshold && distance < minDistance) {
-        minDistance = distance;
+      const thresholdSq = threshold * threshold;
+
+      if (distanceSq < thresholdSq && distanceSq < minDistanceSq) {
+        minDistanceSq = distanceSq;
         nearestNote = note;
       }
     }

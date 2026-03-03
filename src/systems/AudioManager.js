@@ -75,8 +75,12 @@ class AudioManager {
 
     // Calculate speed
     if (this.camera) {
-        const distance = this.camera.position.distanceTo(this.lastPosition);
-        this.currentSpeed = distance / delta;
+        const distanceSq = this.camera.position.distanceToSquared(this.lastPosition);
+        if (distanceSq > 0.000001) {
+            this.currentSpeed = Math.sqrt(distanceSq) / delta;
+        } else {
+            this.currentSpeed = 0;
+        }
         this.lastPosition.copy(this.camera.position);
     }
 

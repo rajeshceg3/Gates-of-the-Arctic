@@ -11,14 +11,14 @@ class AtmosphereSystem {
     this.snowParticles = null;
     this.snowGeo = null;
     this.snowMat = null;
-    this.snowVelocities = [];
+    this.snowVelocities = new Float32Array(this.snowCount * 3);
 
     // System 2: Diamond Dust / Suspended Particles
     this.dustCount = 1000;
     this.dustParticles = null;
     this.dustGeo = null;
     this.dustMat = null;
-    this.dustVelocities = [];
+    this.dustVelocities = new Float32Array(this.dustCount * 3);
 
     this.init();
   }
@@ -39,11 +39,10 @@ class AtmosphereSystem {
       positions.push((Math.random() - 0.5) * this.range * 2);
       sizes.push(Math.random());
 
-      this.snowVelocities.push({
-        x: (Math.random() - 0.5) * 0.5,
-        y: -1.0 - Math.random(), // Always falling down
-        z: (Math.random() - 0.5) * 0.5
-      });
+      const i3 = i * 3;
+      this.snowVelocities[i3] = (Math.random() - 0.5) * 0.5;
+      this.snowVelocities[i3 + 1] = -1.0 - Math.random(); // Always falling down
+      this.snowVelocities[i3 + 2] = (Math.random() - 0.5) * 0.5;
     }
 
     this.snowGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
@@ -79,11 +78,10 @@ class AtmosphereSystem {
       positions.push((Math.random() - 0.5) * this.range * 2);
       sizes.push(Math.random());
 
-      this.dustVelocities.push({
-        x: (Math.random() - 0.5) * 0.2,
-        y: (Math.random() - 0.5) * 0.2, // Float
-        z: (Math.random() - 0.5) * 0.2
-      });
+      const i3 = i * 3;
+      this.dustVelocities[i3] = (Math.random() - 0.5) * 0.2;
+      this.dustVelocities[i3 + 1] = (Math.random() - 0.5) * 0.2; // Float
+      this.dustVelocities[i3 + 2] = (Math.random() - 0.5) * 0.2;
     }
 
     this.dustGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
@@ -213,7 +211,7 @@ class AtmosphereSystem {
 
             // Fall down with sway
             positions[i3] += Math.sin(time + i) * 0.05 * speedScale; // Sway X
-            positions[i3 + 1] += this.snowVelocities[i].y * speedScale; // Fall Y
+            positions[i3 + 1] += this.snowVelocities[i3 + 1] * speedScale; // Fall Y
             positions[i3 + 2] += Math.cos(time + i) * 0.05 * speedScale; // Sway Z
 
             this._wrap(positions, i3, cameraPosition);
@@ -228,9 +226,9 @@ class AtmosphereSystem {
             const i3 = i * 3;
 
             // Float / Drift
-            positions[i3] += (this.dustVelocities[i].x + Math.sin(time * 0.5 + i) * 0.02) * speedScale;
-            positions[i3 + 1] += (this.dustVelocities[i].y + Math.cos(time * 0.3 + i) * 0.02) * speedScale;
-            positions[i3 + 2] += (this.dustVelocities[i].z + Math.sin(time * 0.4 + i) * 0.02) * speedScale;
+            positions[i3] += (this.dustVelocities[i3] + Math.sin(time * 0.5 + i) * 0.02) * speedScale;
+            positions[i3 + 1] += (this.dustVelocities[i3 + 1] + Math.cos(time * 0.3 + i) * 0.02) * speedScale;
+            positions[i3 + 2] += (this.dustVelocities[i3 + 2] + Math.sin(time * 0.4 + i) * 0.02) * speedScale;
 
             this._wrap(positions, i3, cameraPosition);
         }

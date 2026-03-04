@@ -1,4 +1,4 @@
-import { Vector3, Raycaster } from 'three';
+import { Vector3 } from 'three';
 import { TerrainHelper } from '../utils/TerrainHelper.js';
 
 const _forwardAxis = new Vector3(0, 0, -1);
@@ -7,16 +7,12 @@ const _upAxis = new Vector3(0, 1, 0);
 const _forwardDir = new Vector3();
 const _rightDir = new Vector3();
 const _targetVelocity = new Vector3();
-const _rayOrigin = new Vector3();
 
 class CameraRig {
   constructor(camera, input) {
     this.camera = camera;
     this.input = input;
     this.zoneManager = null; // Assigned in main.js
-
-    this.raycaster = new Raycaster();
-    this.raycaster.ray.direction.set(0, -1, 0);
 
     // Physics/Movement params
     this.velocity = new Vector3();

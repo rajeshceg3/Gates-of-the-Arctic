@@ -134,21 +134,24 @@ class SkyZone extends Zone {
 
       // Animate Aurora
       if (this.auroraRibbons) {
-          this.auroraRibbons.forEach(item => {
+          for (let r = 0, rl = this.auroraRibbons.length; r < rl; r++) {
+              const item = this.auroraRibbons[r];
               const mesh = item.mesh;
               const k = item.k;
               const pos = mesh.geometry.attributes.position;
+              const posArray = pos.array;
 
-              for(let i=0; i<pos.count; i++) {
-                  const x = pos.getX(i);
-                  const y = pos.getY(i);
+              for (let i = 0, l = pos.count; i < l; i++) {
+                  const i3 = i * 3;
+                  const x = posArray[i3];
+                  const y = posArray[i3 + 1];
 
                   // Animate noise offset with time
                   const z = noise(x * 0.002 + this.time * 0.05, k + y * 0.01) * 100;
-                  pos.setZ(i, z);
+                  posArray[i3 + 2] = z;
               }
               pos.needsUpdate = true;
-          });
+          }
       }
 
       if (camera && this.moonLight) {

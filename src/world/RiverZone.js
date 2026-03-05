@@ -270,17 +270,19 @@ class RiverZone extends Zone {
       // Animate Water
       if (this.water) {
           const pos = this.water.geometry.attributes.position;
+          const posArray = pos.array;
 
-          for(let i=0; i<pos.count; i++) {
-              const x = pos.getX(i);
-              const y = pos.getY(i);
+          for(let i = 0, l = pos.count; i < l; i++) {
+              const i3 = i * 3;
+              const x = posArray[i3];
+              const y = posArray[i3 + 1];
 
               // Wave function (Scaled for larger world)
               let z = Math.sin(x * 0.02 + this.time) * 0.5;
               z += Math.sin(y * 0.01 + this.time * 0.8) * 0.5;
               z += noise(x * 0.01 + this.time, y * 0.01) * 0.5;
 
-              pos.setZ(i, z);
+              posArray[i3 + 2] = z;
           }
           pos.needsUpdate = true;
           this.water.geometry.computeVertexNormals();

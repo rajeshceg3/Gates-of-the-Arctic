@@ -203,18 +203,37 @@ class AtmosphereSystem {
     const speedScale = delta * 5.0;
     const time = Date.now() * 0.001;
 
+    // Cache variables for wrapping
+    const range = this.range;
+    const range2 = range * 2;
+    const cx = cameraPosition.x;
+    const cy = cameraPosition.y;
+    const cz = cameraPosition.z;
+
     // 1. Update Snow
     if (this.snowMat.visible) {
         const positions = this.snowGeo.attributes.position.array;
-        for (let i = 0; i < this.snowCount; i++) {
+        for (let i = 0, l = this.snowCount; i < l; i++) {
             const i3 = i * 3;
 
             // Fall down with sway
-            positions[i3] += Math.sin(time + i) * 0.05 * speedScale; // Sway X
-            positions[i3 + 1] += this.snowVelocities[i3 + 1] * speedScale; // Fall Y
-            positions[i3 + 2] += Math.cos(time + i) * 0.05 * speedScale; // Sway Z
+            let px = positions[i3] + Math.sin(time + i) * 0.05 * speedScale; // Sway X
+            let py = positions[i3 + 1] + this.snowVelocities[i3 + 1] * speedScale; // Fall Y
+            let pz = positions[i3 + 2] + Math.cos(time + i) * 0.05 * speedScale; // Sway Z
 
-            this._wrap(positions, i3, cameraPosition);
+            // Wrap
+            if (px > cx + range) px -= range2;
+            else if (px < cx - range) px += range2;
+
+            if (py > cy + range) py -= range2;
+            else if (py < cy - range) py += range2;
+
+            if (pz > cz + range) pz -= range2;
+            else if (pz < cz - range) pz += range2;
+
+            positions[i3] = px;
+            positions[i3 + 1] = py;
+            positions[i3 + 2] = pz;
         }
         this.snowGeo.attributes.position.needsUpdate = true;
     }
@@ -222,34 +241,30 @@ class AtmosphereSystem {
     // 2. Update Dust
     if (this.dustMat.visible) {
         const positions = this.dustGeo.attributes.position.array;
-        for (let i = 0; i < this.dustCount; i++) {
+        for (let i = 0, l = this.dustCount; i < l; i++) {
             const i3 = i * 3;
 
             // Float / Drift
-            positions[i3] += (this.dustVelocities[i3] + Math.sin(time * 0.5 + i) * 0.02) * speedScale;
-            positions[i3 + 1] += (this.dustVelocities[i3 + 1] + Math.cos(time * 0.3 + i) * 0.02) * speedScale;
-            positions[i3 + 2] += (this.dustVelocities[i3 + 2] + Math.sin(time * 0.4 + i) * 0.02) * speedScale;
+            let px = positions[i3] + (this.dustVelocities[i3] + Math.sin(time * 0.5 + i) * 0.02) * speedScale;
+            let py = positions[i3 + 1] + (this.dustVelocities[i3 + 1] + Math.cos(time * 0.3 + i) * 0.02) * speedScale;
+            let pz = positions[i3 + 2] + (this.dustVelocities[i3 + 2] + Math.sin(time * 0.4 + i) * 0.02) * speedScale;
 
-            this._wrap(positions, i3, cameraPosition);
+            // Wrap
+            if (px > cx + range) px -= range2;
+            else if (px < cx - range) px += range2;
+
+            if (py > cy + range) py -= range2;
+            else if (py < cy - range) py += range2;
+
+            if (pz > cz + range) pz -= range2;
+            else if (pz < cz - range) pz += range2;
+
+            positions[i3] = px;
+            positions[i3 + 1] = py;
+            positions[i3 + 2] = pz;
         }
         this.dustGeo.attributes.position.needsUpdate = true;
     }
-  }
-
-  _wrap(positions, i3, cameraPosition) {
-    const range = this.range;
-
-    // X wrap
-    if (positions[i3] > cameraPosition.x + range) positions[i3] -= range * 2;
-    if (positions[i3] < cameraPosition.x - range) positions[i3] += range * 2;
-
-    // Y wrap
-    if (positions[i3 + 1] > cameraPosition.y + range) positions[i3 + 1] -= range * 2;
-    if (positions[i3 + 1] < cameraPosition.y - range) positions[i3 + 1] += range * 2;
-
-    // Z wrap
-    if (positions[i3 + 2] > cameraPosition.z + range) positions[i3 + 2] -= range * 2;
-    if (positions[i3 + 2] < cameraPosition.z - range) positions[i3 + 2] += range * 2;
   }
 }
 

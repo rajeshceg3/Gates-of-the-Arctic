@@ -72,7 +72,15 @@ class FieldNoteSystem {
 
     if (this.container && this.textElement) {
         // Update content
-        this.textElement.textContent = note.text;
+        this.textElement.innerHTML = '';
+        const words = note.text.split(' ');
+        words.forEach((word, index) => {
+            const span = document.createElement('span');
+            span.textContent = word + ' ';
+            span.className = 'fade-in-word';
+            span.style.animationDelay = `${index * 0.15}s`;
+            this.textElement.appendChild(span);
+        });
 
         // Show container
         this.container.classList.add('visible');

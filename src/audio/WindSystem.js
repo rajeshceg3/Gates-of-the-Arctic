@@ -154,12 +154,13 @@ class WindSystem {
   }
 
   stop() {
-    this.nodes.forEach(n => {
+    for (let i = 0, l = this.nodes.length; i < l; i++) {
+        const n = this.nodes[i];
         n.source.stop();
         n.source.disconnect();
         n.gainNode.disconnect();
         if (n.panner) n.panner.disconnect();
-    });
+    }
     this.nodes = [];
   }
 }

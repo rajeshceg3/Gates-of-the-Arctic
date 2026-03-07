@@ -44,7 +44,8 @@ class FieldNoteSystem {
     let nearestNote = null;
     let minDistanceSq = Infinity;
 
-    for (const note of this.notes) {
+    for (let i = 0, l = this.notes.length; i < l; i++) {
+      const note = this.notes[i];
       const distanceSq = this.camera.position.distanceToSquared(note.position);
 
       // Use a hysteresis: trigger at radius, leave at radius + 5

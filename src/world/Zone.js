@@ -19,7 +19,9 @@ class Zone extends Group {
         if (object.geometry) object.geometry.dispose();
         if (object.material) {
           if (Array.isArray(object.material)) {
-            object.material.forEach((m) => m.dispose());
+            for (let i = 0, l = object.material.length; i < l; i++) {
+              object.material[i].dispose();
+            }
           } else {
             object.material.dispose();
           }

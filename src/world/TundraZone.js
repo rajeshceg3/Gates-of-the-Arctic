@@ -172,7 +172,8 @@ class TundraZone extends Zone {
     const instColor = new THREE.Color();
 
     // Setup Rocks
-    points.forEach((p, i) => {
+    for (let i = 0, l = points.length; i < l; i++) {
+        const p = points[i];
         const x = p.x - offset;
         const z = p.y - offset;
 
@@ -193,10 +194,11 @@ class TundraZone extends Zone {
         // Color variation
         instColor.copy(baseRockColor).lerp(rockVarColor, Math.random() * 0.5).multiplyScalar(0.8 + Math.random() * 0.4);
         rocks.setColorAt(i, instColor);
-    });
+    }
 
     // Setup Pebbles
-    pebblePoints.forEach((p, i) => {
+    for (let i = 0, l = pebblePoints.length; i < l; i++) {
+        const p = pebblePoints[i];
         const x = p.x - offset;
         const z = p.y - offset;
 
@@ -213,7 +215,7 @@ class TundraZone extends Zone {
 
         instColor.copy(basePebbleColor).multiplyScalar(0.8 + Math.random() * 0.4);
         pebbles.setColorAt(i, instColor);
-    });
+    }
 
     this.add(rocks);
     this.add(pebbles);

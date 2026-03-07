@@ -226,7 +226,8 @@ class RiverZone extends Zone {
       const baseColor = new THREE.Color(colorHex);
       const instColor = new THREE.Color();
 
-      points.forEach((p, i) => {
+      for (let i = 0, l = points.length; i < l; i++) {
+          const p = points[i];
           const x = p.x - offset;
           const z = p.y - offset;
 
@@ -252,7 +253,7 @@ class RiverZone extends Zone {
 
                count++;
           }
-      });
+      }
       mesh.count = count; // Update count to skip unused instances
       this.add(mesh);
   }

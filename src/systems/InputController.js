@@ -132,7 +132,8 @@ class InputController {
 
     // Hover effects for buttons
     const buttons = document.querySelectorAll('button, #settings-btn');
-    buttons.forEach(btn => {
+    for (let i = 0, l = buttons.length; i < l; i++) {
+      const btn = buttons[i];
       btn.addEventListener('mouseenter', () => {
         if(this.cursor) this.cursor.classList.add('active');
         if(this.cursorFollower) this.cursorFollower.classList.add('active');
@@ -141,7 +142,7 @@ class InputController {
         if(this.cursor) this.cursor.classList.remove('active');
         if(this.cursorFollower) this.cursorFollower.classList.remove('active');
       });
-    });
+    }
 
     document.addEventListener('click', (e) => {
       // Only request lock if not clicking a button/UI and not paused

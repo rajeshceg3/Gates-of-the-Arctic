@@ -134,10 +134,11 @@ class ForestZone extends Zone {
     const points = pds.fill();
 
     const pointsByType = Array(numTypes).fill().map(() => []);
-    points.forEach(p => {
+    for (let i = 0, l = points.length; i < l; i++) {
+        const p = points[i];
         const typeIdx = Math.floor(Math.random() * numTypes);
         pointsByType[typeIdx].push(p);
-    });
+    }
 
     const dummy = new THREE.Object3D();
     const instColor = new THREE.Color();
@@ -156,7 +157,8 @@ class ForestZone extends Zone {
         woodMesh.castShadow = true; woodMesh.receiveShadow = true;
         leafMesh.castShadow = true; leafMesh.receiveShadow = true;
 
-        typePoints.forEach((p, i) => {
+        for (let i = 0, l = typePoints.length; i < l; i++) {
+             const p = typePoints[i];
              const x = p.x - offset;
              const z = p.y - offset;
              const y = TerrainHelper.getHeightAt(x, z, this.heightData, this.terrainSize, this.terrainSegments);
@@ -180,7 +182,7 @@ class ForestZone extends Zone {
              // Actually just brightness
              instColor.copy(leafBaseColor).multiplyScalar(0.8 + Math.random() * 0.4);
              leafMesh.setColorAt(i, instColor);
-        });
+        }
 
         this.add(woodMesh);
         this.add(leafMesh);
@@ -198,7 +200,8 @@ class ForestZone extends Zone {
 
     const rockBaseColor = new THREE.Color(0x555555);
 
-    rockPoints.forEach((p, i) => {
+    for (let i = 0, l = rockPoints.length; i < l; i++) {
+         const p = rockPoints[i];
          const x = p.x - offset;
          const z = p.y - offset;
          const y = TerrainHelper.getHeightAt(x, z, this.heightData, this.terrainSize, this.terrainSegments);
@@ -212,7 +215,7 @@ class ForestZone extends Zone {
 
          instColor.copy(rockBaseColor).multiplyScalar(0.8 + Math.random() * 0.4);
          rocks.setColorAt(i, instColor);
-    });
+    }
     this.add(rocks);
 
     // Initialize Grass System

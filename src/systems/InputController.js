@@ -39,10 +39,15 @@ class InputController {
 
     // Cursor Follower Lerp (Desktop)
     if (this.cursorFollower && !('ontouchstart' in window)) {
-        // Smooth lerp factor
-        const lerpFactor = 10.0 * delta;
-        this.followerPos.x += (this.mousePos.x - this.followerPos.x) * lerpFactor;
-        this.followerPos.y += (this.mousePos.y - this.followerPos.y) * lerpFactor;
+        // Smooth lerp factor - decreased from 10.0 to 6.0 for a heavier, more magnetic feel
+        const lerpFactor = 6.0 * delta;
+
+        // Calculate the distance between follower and actual mouse
+        const dx = this.mousePos.x - this.followerPos.x;
+        const dy = this.mousePos.y - this.followerPos.y;
+
+        this.followerPos.x += dx * lerpFactor;
+        this.followerPos.y += dy * lerpFactor;
 
         this.cursorFollower.style.transform = `translate3d(${this.followerPos.x}px, ${this.followerPos.y}px, 0) translate(-50%, -50%)`;
 

@@ -16,13 +16,14 @@ class FootstepSystem {
 
     const materials = ['snow', 'sand', 'rock', 'dirt', 'mud', 'cloud'];
 
-    materials.forEach(mat => {
+    for (let i = 0, l = materials.length; i < l; i++) {
+        const mat = materials[i];
         this.buffers[mat] = [];
         // Create 4 variations per material
-        for (let i = 0; i < 4; i++) {
+        for (let j = 0; j < 4; j++) {
             this.buffers[mat].push(this.createBufferForMaterial(mat));
         }
-    });
+    }
   }
 
   createBufferForMaterial(material) {

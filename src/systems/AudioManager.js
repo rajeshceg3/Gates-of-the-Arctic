@@ -150,20 +150,27 @@ class AudioManager {
   }
 
   _stopCurrentTheme() {
-    this.activeNodes.forEach(item => {
+    for (let i = 0, l = this.activeNodes.length; i < l; i++) {
+        const item = this.activeNodes[i];
         try {
             if (item.source) {
                 item.source.stop(this.context.currentTime + 0.1);
             }
             setTimeout(() => {
                 if (item.source) item.source.disconnect();
-                if (item.nodes) item.nodes.forEach(n => n.disconnect());
+                if (item.nodes) {
+                    for (let j = 0, jl = item.nodes.length; j < jl; j++) {
+                        item.nodes[j].disconnect();
+                    }
+                }
             }, 200);
         } catch (e) { console.warn(e); }
-    });
+    }
     this.activeNodes = [];
 
-    this.activeIntervals.forEach(id => clearTimeout(id));
+    for (let i = 0, l = this.activeIntervals.length; i < l; i++) {
+        clearTimeout(this.activeIntervals[i]);
+    }
     this.activeIntervals = [];
 
     if (this.windSystem) this.windSystem.stop();

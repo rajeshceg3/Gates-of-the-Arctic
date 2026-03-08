@@ -32,7 +32,8 @@ class Loop {
   tick() {
     // Delta time in seconds
     const delta = clock.getDelta();
-    for (const object of this.updatables) {
+    for (let i = 0, l = this.updatables.length; i < l; i++) {
+      const object = this.updatables[i];
       if (object.tick) {
           object.tick(delta);
       }

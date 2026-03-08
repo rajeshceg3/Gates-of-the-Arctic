@@ -80,7 +80,10 @@ class DroneLayer {
         // Cache nodes to disconnect later
         const nodes = [this.osc, this.osc2, this.lfo, this.filter, this.gain, this.lfoGain];
         setTimeout(() => {
-            nodes.forEach(n => { try { if (n) n.disconnect(); } catch(e){} });
+            for (let i = 0, l = nodes.length; i < l; i++) {
+                const n = nodes[i];
+                try { if (n) n.disconnect(); } catch(e){}
+            }
         }, 2500);
       } catch (e) { }
       this.osc = null;

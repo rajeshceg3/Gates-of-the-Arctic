@@ -84,7 +84,7 @@ class FieldNoteSystem {
             span.textContent = word + ' ';
             span.className = 'fade-in-word';
             // Slow down the staggered delay slightly for more "physical" reading feel
-            span.style.animationDelay = `${index * 0.2}s`;
+            span.style.animationDelay = `${index * 0.4}s`;
             this.textElement.appendChild(span);
         });
 

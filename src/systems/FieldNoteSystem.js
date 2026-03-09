@@ -72,6 +72,10 @@ class FieldNoteSystem {
     this.activeNote = note;
 
     if (this.container && this.textElement) {
+        // Force reflow to restart animations if re-triggering quickly
+        this.container.classList.remove('visible');
+        void this.container.offsetWidth;
+
         // Update content
         this.textElement.innerHTML = '';
         const words = note.text.split(' ');
@@ -79,7 +83,8 @@ class FieldNoteSystem {
             const span = document.createElement('span');
             span.textContent = word + ' ';
             span.className = 'fade-in-word';
-            span.style.animationDelay = `${index * 0.15}s`;
+            // Slow down the staggered delay slightly for more "physical" reading feel
+            span.style.animationDelay = `${index * 0.2}s`;
             this.textElement.appendChild(span);
         });
 

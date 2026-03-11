@@ -21,9 +21,11 @@ async def run():
                 value: { ready: Promise.resolve() },
                 writable: false
             });
-            const style = document.createElement('style');
-            style.textContent = `* { animation: none !important; transition: none !important; }`;
-            document.documentElement.appendChild(style);
+            document.addEventListener('DOMContentLoaded', () => {
+                const style = document.createElement('style');
+                style.textContent = `* { animation: none !important; transition: none !important; }`;
+                document.documentElement.appendChild(style);
+            });
         """)
 
         page.on("console", lambda msg: print(f"PAGE LOG: {msg.text}"))

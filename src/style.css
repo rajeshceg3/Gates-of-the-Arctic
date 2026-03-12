@@ -71,22 +71,40 @@ canvas {
     radial-gradient(circle at 90% 20%, rgba(255, 255, 255, 0.08) 0%, transparent 20%);
   background-size: 150% 150%, 200% 200%, 100% 100%, 120% 120%, 300% 300%, 250% 250%, 400% 400%;
   z-index: -1;
-  animation: ambientBreathe 20s ease-in-out infinite alternate;
+  animation: ambientBreathe 25s cubic-bezier(0.22, 1, 0.36, 1) infinite alternate;
   pointer-events: none;
-  filter: blur(5px);
+  filter: blur(15px);
+}
+
+#landing-ambient-bg::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 60%);
+  background-size: 100% 100%;
+  animation: slowPulse 10s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+  pointer-events: none;
 }
 
 @keyframes ambientBreathe {
   0% {
     background-position: 0% 0%, 100% 100%, 50% 50%, 0% 100%, 10% 20%, 80% 90%, 20% 80%;
     transform: scale(1) rotate(0deg);
-    opacity: 0.7;
+    opacity: 0.6;
   }
   100% {
     background-position: 100% 100%, 0% 0%, 50% 50%, 100% 0%, 90% 80%, 20% 10%, 80% 20%;
-    transform: scale(1.1) rotate(2deg);
-    opacity: 1;
+    transform: scale(1.05) rotate(1deg);
+    opacity: 0.9;
   }
+}
+
+@keyframes slowPulse {
+  0% { opacity: 0.3; transform: scale(0.95); }
+  100% { opacity: 0.8; transform: scale(1.05); }
 }
 
 #landing-screen.fade-out {
@@ -114,7 +132,7 @@ canvas {
 
 @keyframes slowRevealTitle {
   0% { opacity: 0; transform: translateY(20px); letter-spacing: 0.8rem; filter: blur(10px); }
-  100% { opacity: 1; transform: translateY(0); letter-spacing: 1.5rem; filter: blur(0px); }
+  100% { opacity: 1; transform: translateY(0); letter-spacing: 2rem; filter: blur(0px); }
 }
 
 #landing-screen .subtitle {
@@ -236,14 +254,27 @@ canvas {
 #zone-label-container {
   position: absolute;
   top: 35%;
-  left: 0;
-  width: 100%;
+  left: 50%;
+  width: auto;
+  padding: 3rem 5rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border-radius: 4px;
+  background: rgba(10, 16, 26, 0.1);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), inset 0 0 40px rgba(255, 255, 255, 0.02);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  transform: translateY(-50%);
+  transform: translate(-50%, -50%);
   pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#zone-label-container.visible {
+  opacity: 1;
 }
 
 #zone-label {
@@ -357,13 +388,13 @@ canvas {
 @keyframes wordPhysicalReveal {
   0% {
     opacity: 0;
-    transform: translateY(15px) scale(0.98);
+    transform: translateY(20px);
     filter: blur(10px);
     color: rgba(255, 255, 255, 0.3);
   }
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
     filter: blur(0px);
     color: rgba(255, 255, 255, 0.9);
   }
@@ -384,6 +415,7 @@ canvas {
   border: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }
 
 #controls-hint:hover {
@@ -685,7 +717,7 @@ canvas {
   width: 12px;
   height: 12px;
   background: var(--color-accent);
-  box-shadow: 0 0 20px var(--color-accent);
+  box-shadow: 0 0 30px var(--color-accent);
   mix-blend-mode: normal;
 }
 

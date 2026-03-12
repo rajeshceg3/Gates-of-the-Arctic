@@ -71,19 +71,22 @@ class ZoneManager {
   }
 
   showLabel(name) {
+    const container = document.getElementById('zone-label-container');
     const label = document.getElementById('zone-label');
     const subtitle = document.getElementById('zone-subtitle');
 
-    if (label) {
+    if (label && container) {
         if (this.labelTimeout) clearTimeout(this.labelTimeout);
 
         label.classList.remove('label-visible');
         if (subtitle) subtitle.classList.remove('visible');
+        container.classList.remove('visible');
 
         // Wait for class removal to register
         setTimeout(() => {
             label.textContent = name.toUpperCase();
             label.classList.add('label-visible');
+            container.classList.add('visible');
             // Opacity is handled by CSS animation
 
             if (subtitle) {
@@ -96,6 +99,7 @@ class ZoneManager {
         this.labelTimeout = setTimeout(() => {
             label.classList.remove('label-visible');
             if (subtitle) subtitle.classList.remove('visible');
+            container.classList.remove('visible');
         }, 10000);
     }
   }

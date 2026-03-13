@@ -79,14 +79,15 @@ class FieldNoteSystem {
         // Update content
         this.textElement.innerHTML = '';
         const words = note.text.split(' ');
-        words.forEach((word, index) => {
+        for (let i = 0, l = words.length; i < l; i++) {
+            const word = words[i];
             const span = document.createElement('span');
             span.textContent = word + ' ';
             span.className = 'fade-in-word';
             // Speed up the staggered delay slightly for a smoother cascading read
-            span.style.animationDelay = `${index * 0.2}s`;
+            span.style.animationDelay = `${i * 0.2}s`;
             this.textElement.appendChild(span);
-        });
+        }
 
         // Show container
         this.container.classList.add('visible');

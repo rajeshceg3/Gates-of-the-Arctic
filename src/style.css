@@ -808,3 +808,33 @@ canvas {
     height: 80px;
   }
 }
+
+/* NEW UX ENHANCEMENTS */
+
+/* 1. Interactive Cursor Ripple */
+.cursor-ripple {
+  position: fixed;
+  width: 20px;
+  height: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9997;
+  transform: translate(-50%, -50%) scale(1);
+  animation: rippleEffect 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes rippleEffect {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+  100% { transform: translate(-50%, -50%) scale(4); opacity: 0; }
+}
+
+/* 2. Dynamic Breathing Vignette */
+#ui-overlay {
+  animation: breatheVignette 8s ease-in-out infinite alternate;
+}
+
+@keyframes breatheVignette {
+  0% { opacity: 0.7; }
+  100% { opacity: 1; }
+}

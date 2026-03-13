@@ -59,6 +59,20 @@ class InputController {
             this.cursorFollower.style.opacity = '1';
         }
     }
+
+    // Parallax Zone Labels
+    const labelContainer = document.getElementById('zone-label-container');
+    if (labelContainer && !this.paused) {
+      // Normalize mouse pos from -1 to 1
+      const nx = (this.mousePos.x / window.innerWidth) * 2 - 1;
+      const ny = (this.mousePos.y / window.innerHeight) * 2 - 1;
+
+      // Move slightly opposite to the mouse
+      const tx = nx * -10;
+      const ty = ny * -10;
+
+      labelContainer.style.transform = `translate(-50%, -50%) translate3d(${tx}px, ${ty}px, 0)`;
+    }
   }
 
   setPaused(isPaused) {
@@ -155,6 +169,19 @@ class InputController {
       // Standard behavior: click to lock.
       if (!this.paused && !e.target.closest('button') && !e.target.closest('#settings-btn')) {
           document.body.requestPointerLock();
+      }
+
+      // Interactive Cursor Ripple
+      if (!this.paused && !('ontouchstart' in window)) {
+          const ripple = document.createElement('div');
+          ripple.className = 'cursor-ripple';
+          ripple.style.left = `${e.clientX}px`;
+          ripple.style.top = `${e.clientY}px`;
+          document.body.appendChild(ripple);
+
+          setTimeout(() => {
+              if (ripple.parentNode) ripple.parentNode.removeChild(ripple);
+          }, 600);
       }
     });
 

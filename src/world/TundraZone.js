@@ -20,13 +20,13 @@ class TundraZone extends Zone {
 
     // Lighting
     // Warmer, lower sun for "Gates of the Arctic" golden hour feel
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x666666, 1.05);
     hemiLight.position.set(0, 20, 0);
     this.add(hemiLight);
 
-    const dirLight = new THREE.DirectionalLight(0xffccaa, 1.0); // Warmer light
-    dirLight.position.set(-50, 15, -50); // Much lower sun angle (15 degrees)
-    dirLight.castShadow = true;
+    const dirLight = new THREE.DirectionalLight(0xffccaa, 1.5); // Warmer light
+    dirLight.position.set(-50, 32, -50); // Low arctic sun, but high enough to read the ground
+    dirLight.castShadow = false; // large terrain + low-res map read as full-terrain acne
     dirLight.shadow.bias = -0.0005;
     dirLight.shadow.mapSize.width = 2048;
     dirLight.shadow.mapSize.height = 2048;

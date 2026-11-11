@@ -59,7 +59,7 @@ class ForestZone extends Zone {
 
     const dirLight = new THREE.DirectionalLight(0xffbb99, 1.0); // Slightly warmer
     dirLight.position.set(-50, 30, -50);
-    dirLight.castShadow = true;
+    dirLight.castShadow = false; // terrain-scale acne guard
     dirLight.shadow.bias = -0.0005;
     dirLight.shadow.mapSize.width = 2048;
     dirLight.shadow.mapSize.height = 2048;

@@ -26,13 +26,13 @@ export class PostProcessingManager {
 
     // Film Pass (Grain)
     // noise intensity, scanlines, scanlines intensity, grayscale
-    const filmPass = new FilmPass(0.15, 0, 0, false);
+    const filmPass = new FilmPass(0.08, 0, 0, false);
     this.composer.addPass(filmPass);
 
     // Vignette Pass
     const vignettePass = new ShaderPass(VignetteShader);
     vignettePass.uniforms["offset"].value = 0.95;
-    vignettePass.uniforms["darkness"].value = 1.6;
+    vignettePass.uniforms["darkness"].value = 1.0;
     this.composer.addPass(vignettePass);
   }
 

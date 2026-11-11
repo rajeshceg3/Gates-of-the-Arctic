@@ -17,11 +17,11 @@ class MountainZone extends Zone {
     }
 
     // Lighting
-    const hemiLight = new THREE.HemisphereLight(0xeef0ff, 0x443333, 0.6); // Warmer ambient
+    const hemiLight = new THREE.HemisphereLight(0xeef0ff, 0x554444, 0.95); // Warmer ambient, lifted so the valley floor reads
     hemiLight.position.set(0, 50, 0);
     this.add(hemiLight);
 
-    const dirLight = new THREE.DirectionalLight(0xffeebb, 1.0); // Warmer sun
+    const dirLight = new THREE.DirectionalLight(0xffeebb, 1.35); // Warmer sun, lifted
     dirLight.position.set(20, 50, 20);
     dirLight.castShadow = false; // terrain-scale acne guard
     dirLight.shadow.bias = -0.0005;
@@ -77,9 +77,9 @@ class MountainZone extends Zone {
         return height;
     };
 
-    const colorRock = new THREE.Color(0x444455);
+    const colorRock = new THREE.Color(0x55555e);
     const colorSnow = new THREE.Color(0xffffff);
-    const colorLow = new THREE.Color(0x556655); // Greenish grey at bottom
+    const colorLow = new THREE.Color(0x687861); // Greenish grey at bottom, lifted for form
     const tempColor = new THREE.Color();
 
     const colorFn = (x, y, h, slope) => {

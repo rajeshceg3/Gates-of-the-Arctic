@@ -53,7 +53,7 @@ class ForestZone extends Zone {
     this.add(new THREE.Mesh(skyGeo, skyMat));
 
     // Lighting
-    const hemiLight = new THREE.HemisphereLight(0x445566, 0x112211, 0.3);
+    const hemiLight = new THREE.HemisphereLight(0x445566, 0x1a2a1a, 0.5);
     hemiLight.position.set(0, 50, 0);
     this.add(hemiLight);
 

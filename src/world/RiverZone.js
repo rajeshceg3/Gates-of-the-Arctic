@@ -56,7 +56,7 @@ class RiverZone extends Zone {
     this.add(new THREE.Mesh(skyGeo, skyMat));
 
     // Lighting
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x554444, 0.95); // Warmer ambient, lifted so the banks read
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x554444, 3.0); // Warmer ambient, lifted so the banks read
     hemiLight.position.set(0, 20, 0);
     this.add(hemiLight);
 

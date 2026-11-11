@@ -17,7 +17,7 @@ class MountainZone extends Zone {
     }
 
     // Lighting
-    const hemiLight = new THREE.HemisphereLight(0xeef0ff, 0x554444, 0.95); // Warmer ambient, lifted so the valley floor reads
+    const hemiLight = new THREE.HemisphereLight(0xeef0ff, 0x554444, 3.0); // Warmer ambient, lifted so the valley floor reads
     hemiLight.position.set(0, 50, 0);
     this.add(hemiLight);
 

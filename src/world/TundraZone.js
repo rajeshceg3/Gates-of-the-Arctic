@@ -20,7 +20,7 @@ class TundraZone extends Zone {
 
     // Lighting
     // Warmer, lower sun for "Gates of the Arctic" golden hour feel
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x666666, 1.05);
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x666666, 3.2);
     hemiLight.position.set(0, 20, 0);
     this.add(hemiLight);
 

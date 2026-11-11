@@ -231,6 +231,11 @@ class AtmosphereSystem {
             if (pz > cz + range) pz -= range2;
             else if (pz < cz - range) pz += range2;
 
+            // Keep flakes off the lens: nearer than ~2m a point sprite rasterizes as a
+            // giant clipped wedge / additive glare that covers the lower frame
+            const ndx = px - cx, ndy = py - cy, ndz = pz - cz;
+            if (ndx*ndx + ndy*ndy + ndz*ndz < 4.0) { px += 40.0; pz -= 30.0; }
+
             positions[i3] = px;
             positions[i3 + 1] = py;
             positions[i3 + 2] = pz;
@@ -258,6 +263,10 @@ class AtmosphereSystem {
 
             if (pz > cz + range) pz -= range2;
             else if (pz < cz - range) pz += range2;
+
+            // Same near-lens guard as snow
+            const ndx = px - cx, ndy = py - cy, ndz = pz - cz;
+            if (ndx*ndx + ndy*ndy + ndz*ndz < 4.0) { px += 40.0; pz -= 30.0; }
 
             positions[i3] = px;
             positions[i3 + 1] = py;

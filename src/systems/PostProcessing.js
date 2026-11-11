@@ -20,7 +20,7 @@ export class PostProcessingManager {
       new THREE.Vector2(window.innerWidth, window.innerHeight),
       0.2, // Strength
       0.5, // Radius
-      0.9  // Threshold
+      1.0  // Threshold - pale arctic sky (dbe9f4) must not bloom into a white blob
     );
     this.composer.addPass(bloomPass);
 
@@ -32,7 +32,7 @@ export class PostProcessingManager {
     // Vignette Pass
     const vignettePass = new ShaderPass(VignetteShader);
     vignettePass.uniforms["offset"].value = 0.95;
-    vignettePass.uniforms["darkness"].value = 1.0;
+    vignettePass.uniforms["darkness"].value = 0.7; // 1.0 crushed the lower frame to black
     this.composer.addPass(vignettePass);
   }
 

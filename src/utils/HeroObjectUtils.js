@@ -4,7 +4,7 @@ import { distortGeometry } from './GeometryUtils.js';
 export function createInukshuk() {
     const group = new THREE.Group();
     const material = new THREE.MeshStandardMaterial({
-        color: 0x888888,
+        color: 0xa9a9a2, // Lightened: scene ambient is weak vs sun, dark albedos photograph black
         roughness: 0.9,
         flatShading: true
     });
@@ -60,7 +60,7 @@ export function createInukshuk() {
 export function createStandingStones() {
     const group = new THREE.Group();
     const material = new THREE.MeshStandardMaterial({
-        color: 0x555555,
+        color: 0x8f8f88, // Lightened so stones read under hemisphere-only light
         roughness: 0.9,
         flatShading: true
     });
@@ -100,7 +100,7 @@ export function createStandingStones() {
 export function createCairn() {
     const group = new THREE.Group();
     const material = new THREE.MeshStandardMaterial({
-        color: 0x666666,
+        color: 0x9a9a92, // Lightened so stones read under hemisphere-only light
         roughness: 0.9,
         flatShading: true
     });

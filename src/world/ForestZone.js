@@ -92,7 +92,7 @@ class ForestZone extends Zone {
     };
 
     const size = 5000;
-    const segments = 1024;
+    const segments = 256;
     const { geometry, heightData } = TerrainHelper.generate(size, segments, heightFn, colorFn);
     this.heightData = heightData;
     this.terrainSize = size;

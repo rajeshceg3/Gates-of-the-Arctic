@@ -47,7 +47,7 @@ class TundraZone extends Zone {
 
     // Terrain
     const size = 5000;
-    const segments = 1024; // Increased resolution and size
+    const segments = 256; // Increased resolution and size
 
     // Height Function
     const heightFn = (x, y) => {
